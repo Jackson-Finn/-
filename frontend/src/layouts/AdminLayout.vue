@@ -1,13 +1,14 @@
 <template>
   <div class="shell">
     <aside class="left">
-      <AppSidebar title="Control Deck" subtitle="审核、治理与运维协同" :items="navItems" />
+      <AppSidebar title="后台运营" subtitle="审核、治理、通知与系统设置" :items="navItems" />
     </aside>
     <main class="main">
       <header class="topbar panel">
-        <div>
-          <div class="pill">管理中台</div>
-          <h1>审核任务、治理决策、推荐与搜索运维都在这里</h1>
+        <div class="topbar-copy">
+          <div class="eyebrow">Operations</div>
+          <h1>管理后台</h1>
+          <p class="topbar-meta">优先展示待处理任务、通知运营和治理动作，把技术诊断下沉到系统设置。</p>
         </div>
         <div class="actions">
           <el-popover placement="bottom-end" :width="460" trigger="click">
@@ -15,8 +16,8 @@
               <el-badge :value="uiStore.unreadNotifications" :hidden="!uiStore.unreadNotifications">
                 <el-button plain>
                   未读通知
-                  <el-tag size="small" effect="plain" :type="wsStatusType" style="margin-left: 8px;">
-                    {{ wsStatusLabel }}
+                  <el-tag size="small" effect="plain" :type="presenceType" style="margin-left: 8px;">
+                    {{ presenceLabel }}
                   </el-tag>
                 </el-button>
               </el-badge>
@@ -26,11 +27,13 @@
               :loading="uiStore.notificationLoading"
               :error="uiStore.notificationError"
               :unread-count="uiStore.unreadNotifications"
+              :presence-status="userStore.profile?.presence_status || 'OFFLINE'"
               :ws-status="uiStore.wsStatus"
               :last-synced-at="uiStore.lastNotificationSyncAt"
               :marking-id="uiStore.markingNotificationId"
               @refresh="uiStore.syncNotifications()"
               @mark-read="uiStore.markNotificationRead"
+              @update-presence="updatePresenceStatus"
             />
           </el-popover>
           <RouterLink to="/">
@@ -47,48 +50,56 @@
 
 <script setup>
 import { computed } from 'vue'
+import { ElMessage } from 'element-plus'
 
 import AppSidebar from '../components/AppSidebar.vue'
 import NotificationCenter from '../components/NotificationCenter.vue'
 import { useUiStore } from '../stores/ui'
+import { useUserStore } from '../stores/user'
 
 const uiStore = useUiStore()
+const userStore = useUserStore()
 const navItems = [
-  { to: '/admin', label: '概览', icon: 'DataAnalysis' },
-  { to: '/admin/products', label: '商品审核', icon: 'DocumentChecked' },
-  { to: '/admin/reports', label: '举报处理', icon: 'Warning' },
-  { to: '/admin/appeals', label: '申诉复核', icon: 'Checked' },
-  { to: '/admin/access', label: '权限管理', icon: 'Lock' }
+  { to: '/admin/audits', label: '审核中心', icon: 'DocumentChecked', activePrefix: '/admin/audits' },
+  { to: '/admin/reports', label: '交易治理', icon: 'Warning', activePrefix: '/admin/reports' },
+  { to: '/admin/notifications', label: '通知运营', icon: 'Bell', activePrefix: '/admin/notifications' },
+  { to: '/admin/platform', label: '系统设置', icon: 'Setting', activePrefix: '/admin/platform' },
+  { to: '/admin/access', label: '权限管理', icon: 'Lock', activePrefix: '/admin/access' }
 ]
 
-const wsStatusLabel = computed(() => {
+const presenceLabel = computed(() => {
   const labels = {
-    OPEN: '在线',
-    CONNECTING: '连接中',
-    CLOSED: '离线',
-    ERROR: '异常',
-    IDLE: '空闲'
+    ONLINE: '在线',
+    INVISIBLE: '隐身',
+    OFFLINE: '离线'
   }
-  return labels[uiStore.wsStatus] || uiStore.wsStatus
+  return labels[userStore.profile?.presence_status] || '离线'
 })
 
-const wsStatusType = computed(() => {
+const presenceType = computed(() => {
   const types = {
-    OPEN: 'success',
-    CONNECTING: 'warning',
-    CLOSED: 'info',
-    ERROR: 'danger',
-    IDLE: 'info'
+    ONLINE: 'success',
+    INVISIBLE: 'warning',
+    OFFLINE: 'info'
   }
-  return types[uiStore.wsStatus] || 'info'
+  return types[userStore.profile?.presence_status] || 'info'
 })
+
+async function updatePresenceStatus(nextStatus) {
+  try {
+    await userStore.setPresenceStatus(nextStatus)
+    ElMessage.success('消息状态已更新')
+  } catch (error) {
+    ElMessage.error(error.message)
+  }
+}
 </script>
 
 <style scoped>
 .shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 248px 1fr;
 }
 
 .left {
@@ -100,7 +111,7 @@ const wsStatusType = computed(() => {
 }
 
 .topbar {
-  padding: 24px;
+  padding: 18px 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -108,15 +119,31 @@ const wsStatusType = computed(() => {
 }
 
 .topbar h1 {
-  margin: 14px 0 0;
-  font-size: 1.8rem;
-  max-width: 620px;
+  margin: 0 0 4px;
+  font-family: var(--font-ui);
+  font-size: clamp(1.2rem, 1.8vw, 1.55rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.topbar-copy {
+  max-width: 560px;
+}
+
+.topbar-meta {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .actions {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 @media (max-width: 960px) {
@@ -127,6 +154,14 @@ const wsStatusType = computed(() => {
   .left,
   .main {
     padding: 14px;
+  }
+
+  .topbar {
+    flex-direction: column;
+  }
+
+  .actions {
+    justify-content: flex-start;
   }
 }
 </style>

@@ -1,10 +1,27 @@
 <template>
   <div class="grid">
+    <section class="panel overview-bar">
+      <div>
+        <div class="eyebrow">Overview</div>
+        <h2 class="section-title">后台概览</h2>
+        <p class="section-meta">优先看待办、治理和系统状态，再决定下一步处理。</p>
+      </div>
+      <div class="action-grid">
+        <RouterLink to="/admin/audits">
+          <el-button type="primary">进入待办队列</el-button>
+        </RouterLink>
+        <RouterLink to="/admin/products">
+          <el-button plain>查看商品列表</el-button>
+        </RouterLink>
+        <el-button @click="loadDashboard">刷新概览</el-button>
+      </div>
+    </section>
+
     <section class="grid grid-4">
-      <StatPanel label="商品总量" :value="overview.products" description="平台在售与草稿统计" />
-      <StatPanel label="待审核" :value="overview.pending_audits" description="商品和治理任务积压" />
-      <StatPanel label="订单总量" :value="overview.orders" description="交易闭环规模" />
-      <StatPanel label="举报总量" :value="overview.reports" description="治理域处理负载" />
+      <StatPanel label="商品总量" :value="overview.products" description="平台当前沉淀的商品规模和可运营内容" />
+      <StatPanel label="待审核" :value="overview.pending_audits" description="最先该被处理的待办，能直接反映治理压力" />
+      <StatPanel label="订单总量" :value="overview.orders" description="交易闭环规模，用来判断活跃度和演示数据完整性" />
+      <StatPanel label="举报总量" :value="overview.reports" description="治理域处理负载，也是后台时间线的主要来源" />
     </section>
 
     <section class="grid grid-2">
@@ -16,35 +33,55 @@
       <div class="panel" style="padding: 22px;">
         <div class="section-header">
           <div>
-            <h3 class="section-title">运维动作</h3>
-            <p class="section-meta">搜索重建与推荐刷新</p>
+            <div class="eyebrow">Audit Queue</div>
+            <h3 class="section-title">审核队列</h3>
+            <p class="section-meta">点击具体对象进入详情处理。</p>
           </div>
+          <RouterLink to="/admin/audits">
+            <el-button plain>全部待办</el-button>
+          </RouterLink>
         </div>
-        <el-space wrap>
-          <el-button type="primary" @click="rebuildRecommendations">刷新推荐快照</el-button>
-          <el-button @click="reindexSearch">重建搜索索引</el-button>
-          <el-button @click="loadDashboard">刷新概览</el-button>
-        </el-space>
+        <el-table :data="auditTasks.slice(0, 5)">
+          <el-table-column prop="id" label="任务 ID" width="90" />
+          <el-table-column prop="task_type" label="类型" width="150" />
+          <el-table-column label="对象">
+            <template #default="{ row }">
+              {{ row.payload?.title || `${row.entity_type} / ${row.entity_id}` }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="120" />
+          <el-table-column label="操作" width="140">
+            <template #default="{ row }">
+              <RouterLink v-if="row.entity_type === 'PRODUCT'" :to="`/admin/products/${row.entity_id}?from=audits`">
+                <el-button plain size="small">处理</el-button>
+              </RouterLink>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
 
       <div class="panel" style="padding: 22px;">
         <div class="section-header">
           <div>
-            <h3 class="section-title">审核队列</h3>
-            <p class="section-meta">统一工作流任务一览</p>
+            <div class="eyebrow">Quick Actions</div>
+            <h3 class="section-title">系统动作</h3>
+            <p class="section-meta">重建类动作支持入队或同步回退。</p>
           </div>
         </div>
-        <el-table :data="auditTasks">
-          <el-table-column prop="id" label="任务 ID" />
-          <el-table-column prop="task_type" label="类型" />
-          <el-table-column prop="status" label="状态" />
-        </el-table>
+        <div class="action-grid stacked">
+          <el-button type="primary" @click="rebuildRecommendations">刷新推荐快照</el-button>
+          <el-button @click="reindexSearch">重建搜索索引</el-button>
+          <RouterLink to="/admin/platform">
+            <el-button plain>查看平台运维</el-button>
+          </RouterLink>
+        </div>
       </div>
     </section>
 
     <section class="panel" style="padding: 22px;">
       <div class="section-header">
         <div>
+          <div class="eyebrow">Operation Trail</div>
           <h3 class="section-title">最近操作记录</h3>
           <p class="section-meta">审核、举报和申诉处理都会留下可追踪记录</p>
         </div>
@@ -105,21 +142,52 @@ async function loadDashboard() {
 }
 
 async function rebuildRecommendations() {
-  await adminApi.rebuildRecommendations()
-  ElMessage.success('推荐任务已触发')
+  const result = await adminApi.rebuildRecommendations()
+  ElMessage.success(result.status === 'queued' ? `推荐任务已入队，作业 #${result.job_id}` : `推荐任务已完成，作业 #${result.job_id}`)
+  await loadDashboard()
 }
 
 async function reindexSearch() {
-  await adminApi.reindexSearch()
-  ElMessage.success('搜索重建任务已触发')
+  const result = await adminApi.reindexSearch()
+  ElMessage.success(result.status === 'queued' ? `搜索重建已入队，作业 #${result.job_id}` : `搜索重建已完成，作业 #${result.job_id}`)
+  await loadDashboard()
 }
 
 onMounted(loadDashboard)
 </script>
 
 <style scoped>
+.overview-bar {
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .chart-card {
   min-height: 320px;
   padding: 16px;
+}
+
+.action-grid {
+  display: grid;
+  gap: 12px;
+  grid-auto-flow: column;
+}
+
+.stacked {
+  grid-auto-flow: row;
+}
+
+@media (max-width: 720px) {
+  .overview-bar {
+    align-items: flex-start;
+  }
+
+  .action-grid {
+    grid-auto-flow: row;
+  }
 }
 </style>

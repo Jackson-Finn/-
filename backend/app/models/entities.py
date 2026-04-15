@@ -4,7 +4,19 @@ from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, Stri
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.core.database import Base
-from app.core.enums import AppealStatus, AuditStatus, MessageStatus, OrderStatus, ProductStatus, ReportStatus, TaskStatus, UserStatus
+from app.core.enums import (
+    AppealStatus,
+    AuditStatus,
+    MessageStatus,
+    NotificationTargetScope,
+    OrderStatus,
+    PresenceStatus,
+    ProductStatus,
+    ReportStatus,
+    ReviewType,
+    TaskStatus,
+    UserStatus,
+)
 
 
 def utcnow() -> datetime:
@@ -24,6 +36,7 @@ class User(Base, TimestampMixin):
     password_hash: Mapped[str] = mapped_column(String(255))
     display_name: Mapped[str] = mapped_column(String(120))
     status: Mapped[str] = mapped_column(String(32), default=UserStatus.ACTIVE.value)
+    presence_status: Mapped[str] = mapped_column(String(32), default=PresenceStatus.ONLINE.value)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
     def permissions(self, db: Session) -> list["Permission"]:
@@ -127,7 +140,9 @@ class Review(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"))
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    seller_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    review_type: Mapped[str] = mapped_column(String(32), default=ReviewType.PRODUCT.value)
     rating: Mapped[int] = mapped_column(Integer)
     content: Mapped[str] = mapped_column(Text)
 
@@ -171,6 +186,7 @@ class Notification(Base, TimestampMixin):
     event_type: Mapped[str] = mapped_column(String(120))
     title: Mapped[str] = mapped_column(String(255))
     content: Mapped[str] = mapped_column(Text)
+    action_target: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
 
 class NotificationRead(Base, TimestampMixin):
@@ -179,6 +195,17 @@ class NotificationRead(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     notification_id: Mapped[int] = mapped_column(ForeignKey("notifications.id"))
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+
+
+class AdminNotificationBroadcast(Base, TimestampMixin):
+    __tablename__ = "admin_notification_broadcasts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    actor_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    target_scope: Mapped[str] = mapped_column(String(32), default=NotificationTargetScope.ALL.value)
+    target_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(255))
+    content: Mapped[str] = mapped_column(Text)
+    action_target: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
 
 class Report(Base, TimestampMixin):
@@ -274,4 +301,3 @@ class AITaskLog(Base, TimestampMixin):
     prompt: Mapped[str] = mapped_column(Text)
     result: Mapped[dict] = mapped_column(JSON, default=dict)
     status: Mapped[str] = mapped_column(String(32), default=TaskStatus.COMPLETED.value)
-

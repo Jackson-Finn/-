@@ -5,6 +5,8 @@ export const interactionApi = {
   createSession: (payload) => request.post('/chat/sessions', payload),
   listMessages: (sessionId) => request.get(`/chat/sessions/${sessionId}/messages`),
   sendMessage: (sessionId, payload) => request.post(`/chat/sessions/${sessionId}/messages`, payload),
+  updatePresence: (payload) => request.put('/chat/presence', payload),
+  chatCopilot: (payload) => request.post('/ai/chat/copilot', payload),
   listNotifications: () => request.get('/notifications'),
   markNotificationRead: (id) => request.post(`/notifications/${id}/read`)
 }

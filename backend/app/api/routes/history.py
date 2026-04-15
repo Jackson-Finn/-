@@ -19,5 +19,4 @@ def capture_history(product_id: int, current_user=Depends(get_current_user), db:
 @router.get("/recent")
 def recent_history(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     entries = TradeService(db).recent_history(current_user.id)
-    return APIResponse(data=[{"id": entry.id, "product_id": entry.product_id, "created_at": entry.created_at} for entry in entries])
-
+    return APIResponse(data=entries)

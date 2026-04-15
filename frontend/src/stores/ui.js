@@ -9,6 +9,7 @@ export const useUiStore = defineStore('ui', () => {
   const notifications = ref([])
   const receivedEvents = ref([])
   const activeSocketUserId = ref(null)
+  const activePresenceStatus = ref('OFFLINE')
   const notificationLoading = ref(false)
   const notificationError = ref('')
   const markingNotificationId = ref(null)
@@ -34,7 +35,8 @@ export const useUiStore = defineStore('ui', () => {
     socket?.close()
     socket = null
     activeSocketUserId.value = null
-    wsStatus.value = 'IDLE'
+    activePresenceStatus.value = 'OFFLINE'
+    wsStatus.value = 'CLOSED'
     receivedEvents.value = []
     notificationLoading.value = false
     notificationError.value = ''
@@ -50,19 +52,27 @@ export const useUiStore = defineStore('ui', () => {
     }
   }
 
-  async function connectRealtime(userId) {
+  async function connectRealtime(userId, presenceStatus = 'ONLINE') {
     if (!userId) {
       disconnectRealtime()
       notifications.value = []
       unreadNotifications.value = 0
       return
     }
-    if (socket && activeSocketUserId.value === userId) {
+    if (presenceStatus === 'OFFLINE') {
+      disconnectRealtime()
+      await syncNotifications()
+      activeSocketUserId.value = userId
+      activePresenceStatus.value = presenceStatus
+      return
+    }
+    if (socket && activeSocketUserId.value === userId && activePresenceStatus.value === presenceStatus) {
       return
     }
 
     disconnectRealtime()
     activeSocketUserId.value = userId
+    activePresenceStatus.value = presenceStatus
     wsStatus.value = 'CONNECTING'
     await syncNotifications()
 
@@ -91,6 +101,7 @@ export const useUiStore = defineStore('ui', () => {
     notificationError,
     markingNotificationId,
     lastNotificationSyncAt,
+    activePresenceStatus,
     syncNotifications,
     connectRealtime,
     disconnectRealtime,

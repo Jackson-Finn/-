@@ -10,12 +10,16 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     secret_key: str = "advanced-marketplace-dev-secret-key-2026"
     access_token_expire_minutes: int = 60 * 24
-    database_url: str = "sqlite:///./advanced_marketplace.db"
+    database_url: str = "sqlite:///./data/advanced_marketplace.db"
     redis_url: str = "redis://redis:6379/0"
     minio_endpoint: str = "minio:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"
     minio_bucket: str = "market-assets"
+    minio_secure: bool = False
+    storage_backend: str = "local"
+    media_storage_dir: str = "./storage/uploads"
+    media_public_base_url: str = "http://localhost:8000"
     opensearch_url: str = "http://opensearch:9200"
     opensearch_index: str = "products"
     ai_provider: str = "mock"
@@ -42,6 +46,14 @@ class Settings(BaseSettings):
             return value
         normalized = str(value).strip().lower()
         return normalized in {"1", "true", "yes", "on", "debug", "development"}
+
+    @field_validator("minio_secure", mode="before")
+    @classmethod
+    def parse_minio_secure(cls, value: object) -> bool:
+        if isinstance(value, bool):
+            return value
+        normalized = str(value).strip().lower()
+        return normalized in {"1", "true", "yes", "on"}
 
 
 @lru_cache

@@ -84,12 +84,16 @@
 - 推荐结果从占位数据升级为真实商品数据
 - 匿名用户也可访问首页推荐，登录用户可结合行为和演示快照得到更贴近场景的结果
 - 推荐结果返回推荐原因，便于展示“可解释推荐”
+- 新增推荐工作台接口和管理端页面，可查看推荐素材流、推荐快照解释、作业日志和 AI 任务日志
 
 ### 5.2 搜索与联想
 - 实现商品搜索接口
 - 支持按关键词检索商品
 - 增强搜索建议逻辑，从商品标题和标签生成联想词
 - 前端首页接入联想搜索输入框，提升展示效果与交互真实感
+- 新增 OpenSearch 搜索适配层 [backend/app/core/search.py](/Users/yzj/vs-workspace/db-design/backend/app/core/search.py:1)
+- 商品创建、更新、审核和下架后会尝试同步搜索索引；当 OpenSearch 不可用时会自动回退到数据库搜索
+- 后台“重建搜索索引”接口已接入真实重建逻辑，并返回当前使用的是 `opensearch` 还是 `database-fallback`
 
 ### 5.3 AI 辅助能力
 - 预留并接入 AI 接口分组
@@ -124,6 +128,17 @@
 - 新增 [frontend/src/components/NotificationCenter.vue](/Users/yzj/vs-workspace/db-design/frontend/src/components/NotificationCenter.vue:1)
 - 将站内通知做成统一组件，接入布局层
 - 支持未读数、列表查看和已读操作
+
+### 6.4 媒体上传链路
+- 新增本地存储适配层 [backend/app/core/storage.py](/Users/yzj/vs-workspace/db-design/backend/app/core/storage.py:1)，为后续接 MinIO 保留抽象入口
+- 后端新增真实文件上传流程：媒体登记、文件上传、上传完成回填
+- 应用新增 `/uploads` 静态资源挂载，商品图片可直接展示
+- 商品创建与更新已支持 `asset_ids`，图片会自动回填到商品图集中
+- 发布页已从“模拟登记媒体”升级为“选择图片 -> 上传 -> 回填 -> 提交商品”
+- 商品卡片和商品详情页已支持展示真实商品图片
+- 存储层已升级为 `local / minio` 双后端实现，容器环境可直接切到 MinIO
+- Nginx 已新增 `/uploads/` 转发，容器模式下可通过统一 URL 访问对象存储中的商品图片
+- 上传完成后会生成 `preview` 和 `compressed` 两类图片变体，并将尺寸与变体 URL 写入媒体元数据
 
 ## 阶段 7：后台治理工作台深化
 
@@ -166,6 +181,11 @@
   - 默认账号登录
   - 商品列表与搜索
   - 匿名首页推荐
+  - 推荐工作台接口
+  - 媒体上传与商品图片回填
+  - 图片变体生成与对象存储兼容
+  - OpenSearch 索引重建与数据库回退搜索
+  - Celery 异步任务触发与同步回退执行
   - 商品发布与审核
   - 下单、聊天、收货、评价
   - 举报、申诉、管理员复核
@@ -184,8 +204,112 @@
   - `/api/admin/statistics/overview`
   - `/api/recommendations/home`
   - `/api/notifications`
-- 后端测试当前通过：`5 passed`
+- 后端测试当前通过：`9 passed`
 - 前端构建当前通过：`npm run build`
+
+## 阶段 10：异步任务链落地
+
+### 10.1 Celery 真任务
+- 为推荐重建和搜索重建补上真实 Celery 任务，见 [backend/app/tasks/jobs.py](/Users/yzj/vs-workspace/db-design/backend/app/tasks/jobs.py:1)
+- `worker` 已显式导入任务模块，保证容器 worker 能正确加载任务
+
+### 10.2 任务调度与回退
+- 新增 [backend/app/services/task_dispatcher.py](/Users/yzj/vs-workspace/db-design/backend/app/services/task_dispatcher.py:1)
+- 当 Redis/Celery 可用时，后台操作会返回 `queued`
+- 当 Redis/Celery 不可用时，系统会自动走同步回退执行，保证功能仍然可用
+- 为避免本地无 Redis 环境长时间阻塞，任务派发已关闭结果回传和发布重试
+
+### 10.3 作业状态留痕
+- `JobRunLog` 现在支持 `PENDING / RUNNING / COMPLETED / FAILED` 状态流转
+- 推荐工作台和后台概览页会看到真实任务状态变化，而不只是静态“已触发”提示
+
+## 阶段 11：平台运维台
+
+### 11.1 平台状态接口
+- 新增后台接口 `GET /api/admin/platform/ops`
+- 聚合返回领域事件总量、作业状态分布、失败作业、待处理审核、搜索引擎状态和存储后端信息
+
+### 11.2 平台运维页面
+- 新增 [frontend/src/views/admin/PlatformOps.vue](/Users/yzj/vs-workspace/db-design/frontend/src/views/admin/PlatformOps.vue:1)
+- 管理端现在可以统一查看：
+  - 领域事件分布
+  - 作业状态分布
+  - 最近作业记录
+  - 失败作业时间线
+  - 搜索索引可用性
+  - 当前存储后端
+
+### 11.3 后台导航收口
+- 管理端侧边栏新增“平台运维”入口
+- 后台从“治理工作台 + 推荐工作台”进一步升级为“治理 + 推荐 + 运维”三块统一中台
+
+## 阶段 12：平台自检与排障收口
+
+### 12.1 依赖就绪度自检
+- `GET /api/admin/platform/ops` 现在不只返回状态快照，还会返回基础设施就绪度清单
+- 运维台可直接看到：
+  - 数据库是否可用
+  - Redis / Broker 是否可用
+  - Celery worker 是否在线，还是处于同步回退
+  - 媒体存储当前走 `local` 还是 `minio`
+  - 搜索索引当前是 `OpenSearch` 还是 `database-fallback`
+- 每一项检查都会附带建议动作，方便快速定位“为什么现在是降级模式”
+
+### 12.2 运维台增强
+- [PlatformOps.vue](/Users/yzj/vs-workspace/db-design/frontend/src/views/admin/PlatformOps.vue:1) 新增“基础设施就绪度”表格和“排障手册”面板
+- 管理端可以直接在页面上看到：
+  - `READY / DEGRADED / FAILED` 状态
+  - 当前运行模式
+  - 失败原因或降级原因
+  - 建议的修复动作
+- 同时顺手修了图表实例重复初始化的问题，避免反复刷新运维台时残留 ECharts 实例
+
+### 12.3 运维与联通文档
+- 新增 [RUNBOOK.md](/Users/yzj/vs-workspace/db-design/RUNBOOK.md:1)
+- 将本地开发、Docker 联调、平台运维台判读、常见故障处理和演示路径集中整理成单独手册
+- README 也补了对应入口，降低后续交接和答辩沟通成本
+
+## 阶段 13：前端构建与包体优化
+
+### 13.1 Element Plus 按需引入
+- 前端不再通过 `app.use(ElementPlus)` 整包注入 UI 库
+- Vite 已接入 `unplugin-vue-components + ElementPlusResolver`
+- 页面中实际使用到的 Element Plus 组件会按需引入，避免把整套组件库都塞进主包
+
+### 13.2 图标注册收敛
+- [frontend/src/main.js](/Users/yzj/vs-workspace/db-design/frontend/src/main.js:1) 不再全量注册全部 Element Plus 图标
+- 改为只注册当前项目侧边栏和页面里实际用到的图标
+- 这样既减少初始包体，也让入口文件的依赖边界更清晰
+
+### 13.3 构建拆包优化
+- [frontend/vite.config.js](/Users/yzj/vs-workspace/db-design/frontend/vite.config.js:1) 保留对 `echarts` 与 `zrender` 的拆包
+- 取消容易引入循环依赖 warning 的过度 vendor 手工拆分
+- 前端构建结果已从此前的 1MB 级主包收敛到更合理的体积范围，构建时不再出现超大 chunk warning
+
+## 阶段 14：Docker 联调收尾工具
+
+### 14.1 一键验证脚本
+- 新增 [scripts/docker-smoke.sh](/Users/yzj/vs-workspace/db-design/scripts/docker-smoke.sh:1)
+- 脚本会依次检查：
+  - `docker compose ps`
+  - 网关 `/health`
+  - API `/health`
+  - 商品列表接口
+  - 首页推荐接口
+  - MinIO 控制台
+  - OpenSearch 集群健康状态
+- 便于在答辩或本机联调时快速判断“容器起来了没有、核心链路通了没有”
+
+### 14.2 Makefile 扩展
+- [Makefile](/Users/yzj/vs-workspace/db-design/Makefile:1) 新增：
+  - `make docker-pull`
+  - `make docker-smoke`
+  - `make docker-reset`
+- 让首次拉镜像、联调验证和数据卷重置都能直接走统一入口
+
+### 14.3 文档收口
+- README 和 RUNBOOK 已同步补充 Docker 首次拉取建议、Smoke 验证入口和重置命令
+- 当前项目已经具备比较完整的“本地开发 -> 容器启动 -> 一键验证 -> 排障定位”闭环文档
 
 ## 阶段 9：基础设施与容器化准备
 
@@ -204,7 +328,6 @@
 
 ### 9.4 当前已知限制
 - 当前机器未安装 `docker`，因此尚未做 `docker compose up` 的本机实跑验证
-- 前端构建存在较大的 `charts` 和 `ui` chunk warning，主要由 `ECharts` 与 `Element Plus` 引起，但不影响开发与演示
 
 ## 当前阶段结论
 
@@ -212,7 +335,9 @@
 - 有完整的前后端骨架和模块边界
 - 有默认演示数据和可直接使用的账号
 - 有商品、交易、聊天、通知、推荐、举报、申诉、权限等核心能力
-- 有后台治理工作台和操作留痕
+- 有真实媒体上传、商品图片回填和前端图片展示能力
+- 有后台治理工作台、推荐工作台和操作留痕
+- 有平台运维台、基础设施就绪度自检和排障手册
 - 有自动化测试和基础容器化方案
 
 ## 建议的后续开发方向
@@ -222,11 +347,11 @@
 1. 推荐解释工作台
 - 在后台增加“推荐素材来源”和“推荐命中原因”可视化页面
 
-2. 搜索与索引实跑
-- 真正接通 OpenSearch，同步索引与联想词热度统计
+2. 搜索能力深化
+- 在现有 OpenSearch 索引同步基础上补充热门搜索、权重调优和行为驱动排序
 
-3. 媒体上传链路
-- 接通 MinIO，补齐图片上传、回填、缩略图生成和审核状态
+3. 媒体处理深化
+- 将当前本地存储切换到 MinIO，并补齐缩略图、压缩图和媒体审核状态
 
 4. 异步任务链
 - 让 Celery 真实承担推荐刷新、索引重建、媒体处理和 AI 任务

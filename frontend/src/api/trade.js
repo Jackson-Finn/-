@@ -7,6 +7,7 @@ export const tradeApi = {
   cancelOrder: (id) => request.post(`/orders/${id}/cancel`),
   createReview: (payload) => request.post('/reviews', payload),
   listReviews: (productId) => request.get(`/reviews/products/${productId}`),
+  listSellerReviews: (sellerId) => request.get(`/reviews/sellers/${sellerId}`),
   addFavorite: (productId) => request.post(`/favorites/${productId}`),
   removeFavorite: (productId) => request.delete(`/favorites/${productId}`),
   listFavorites: () => request.get('/favorites'),
@@ -15,4 +16,3 @@ export const tradeApi = {
   recommendHome: () => request.get('/recommendations/home'),
   recommendRelated: (productId) => request.get(`/recommendations/products/${productId}/related`)
 }
-

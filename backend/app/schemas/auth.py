@@ -24,5 +24,14 @@ class UserSummary(BaseSchema):
     email: str
     display_name: str
     status: str
+    presence_status: str
     is_admin: bool
     permissions: list[str] = []
+
+
+class WorkspaceSummary(BaseSchema):
+    unread_messages: int = 0
+    unread_notifications: int = 0
+    favorites: int = 0
+    recent_history: int = 0
+    active_orders: int = 0

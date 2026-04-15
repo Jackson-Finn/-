@@ -1,8 +1,11 @@
 import request from './request'
 
 export const adminApi = {
+  products: (params = {}) => request.get('/admin/products', { params }),
+  productDetail: (id) => request.get(`/admin/products/${id}`),
   pendingProducts: () => request.get('/admin/products/pending'),
   auditProduct: (id, payload) => request.post(`/admin/products/${id}/audit`, payload),
+  offShelfProduct: (id, payload = {}) => request.post(`/admin/products/${id}/off-shelf`, payload),
   reports: () => request.get('/admin/reports'),
   reportContext: (id) => request.get(`/admin/reports/${id}/context`),
   processReport: (id, payload) => request.post(`/admin/reports/${id}/process`, payload),
@@ -12,11 +15,17 @@ export const adminApi = {
   roles: () => request.get('/admin/roles'),
   permissions: () => request.get('/admin/permissions'),
   users: () => request.get('/admin/users'),
+  notificationUsers: () => request.get('/admin/notification-users'),
   assignRoles: (userId, payload) => request.post(`/admin/users/${userId}/roles`, payload),
   overview: () => request.get('/admin/statistics/overview'),
   charts: () => request.get('/admin/statistics/charts'),
   rebuildRecommendations: () => request.post('/admin/recommendations/rebuild'),
+  recommendationWorkbench: () => request.get('/admin/recommendations/workbench'),
   reindexSearch: () => request.post('/admin/search/reindex'),
+  notifications: () => request.get('/admin/notifications'),
+  publishNotification: (payload) => request.post('/admin/notifications', payload),
+  platformOps: () => request.get('/admin/platform/ops'),
+  aiControl: () => request.get('/admin/ai/control'),
   auditTasks: () => request.get('/admin/audit/tasks'),
   operations: () => request.get('/admin/operations')
 }

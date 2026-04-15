@@ -20,6 +20,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
             email=user.email,
             display_name=user.display_name,
             status=user.status,
+            presence_status=user.presence_status,
             is_admin=user.is_admin,
             permissions=[],
         )
@@ -41,6 +42,7 @@ def me(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
             email=current_user.email,
             display_name=current_user.display_name,
             status=current_user.status,
+            presence_status=current_user.presence_status,
             is_admin=current_user.is_admin,
             permissions=permissions,
         )

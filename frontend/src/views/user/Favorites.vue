@@ -4,33 +4,33 @@
     title="我的收藏"
     description="收藏会进入推荐素材池"
     empty-title="还没有收藏商品"
-    empty-description="你收藏的商品会在这里统一展示，方便后续继续对比和追踪。"
+    empty-description="当前账号还没有收藏记录。先去商品详情点一次收藏，或切换到有演示数据的买家账号查看。"
     error-title="收藏加载失败"
     :error-description="error"
     @retry="loadFavorites"
   >
-    <div class="panel" style="padding: 22px;">
+    <section class="panel favorites-panel">
       <div class="section-header">
         <div>
           <h2 class="section-title">我的收藏</h2>
-          <p class="section-meta">收藏会进入推荐素材池</p>
+          <p class="section-meta">直接看商品名、卖家和价格，再点进详情继续判断。</p>
         </div>
         <el-space wrap>
-          <el-tag effect="plain">{{ favorites.length }} 条收藏</el-tag>
+          <el-tag effect="plain">{{ visibleFavorites.length }} 条收藏</el-tag>
           <el-button @click="loadFavorites">刷新</el-button>
         </el-space>
       </div>
 
-      <el-table :data="favorites">
-        <el-table-column prop="id" label="收藏 ID" />
-        <el-table-column prop="product_id" label="商品 ID" />
-        <el-table-column label="操作">
-          <template #default="{ row }">
-            <el-button type="danger" plain @click="removeFavorite(row.product_id)">取消收藏</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </div>
+      <div class="catalog-grid">
+        <ProductCard
+          v-for="item in visibleFavorites"
+          :key="item.id"
+          :product="item.product_summary"
+        >
+          <el-button type="danger" plain @click.prevent="removeFavorite(item.product_id)">取消收藏</el-button>
+        </ProductCard>
+      </div>
+    </section>
   </DataStateCard>
 </template>
 
@@ -39,11 +39,13 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 import DataStateCard from '../../components/DataStateCard.vue'
+import ProductCard from '../../components/ProductCard.vue'
 import { tradeApi } from '../../api/trade'
 
 const favorites = ref([])
 const loading = ref(false)
 const error = ref('')
+const visibleFavorites = computed(() => favorites.value.filter((item) => item?.product_summary?.id))
 
 async function loadFavorites() {
   loading.value = true
@@ -79,7 +81,31 @@ onMounted(loadFavorites)
 const state = computed(() => {
   if (loading.value) return 'loading'
   if (error.value) return 'error'
-  if (!favorites.value.length) return 'empty'
+  if (!visibleFavorites.value.length) return 'empty'
   return 'ready'
 })
 </script>
+
+<style scoped>
+.favorites-panel {
+  padding: 22px;
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1080px) {
+  .catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .catalog-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

@@ -3,7 +3,7 @@ CONDA_SH := $(HOME)/miniconda3/etc/profile.d/conda.sh
 ENV_NAME := advanced-marketplace
 COMPOSE := docker compose
 
-.PHONY: api frontend test build install-frontend demo docker-up docker-down docker-logs docker-ps docker-config
+.PHONY: api frontend test build install-frontend demo docker-pull docker-up docker-down docker-logs docker-ps docker-config docker-smoke docker-reset
 
 api:
 	source "$(CONDA_SH)" && conda activate "$(ENV_NAME)" && cd backend && uvicorn app.main:app --reload
@@ -31,6 +31,9 @@ demo:
 docker-up:
 	$(COMPOSE) up --detach --wait --wait-timeout 300
 
+docker-pull:
+	$(COMPOSE) pull
+
 docker-down:
 	$(COMPOSE) down --remove-orphans
 
@@ -42,3 +45,9 @@ docker-ps:
 
 docker-config:
 	$(COMPOSE) config
+
+docker-smoke:
+	bash ./scripts/docker-smoke.sh
+
+docker-reset:
+	$(COMPOSE) down -v --remove-orphans

@@ -1,13 +1,14 @@
 <template>
   <div class="shell">
     <aside class="left">
-      <AppSidebar title="Market Studio" subtitle="用户交易与推荐体验" :items="navItems" />
+      <AppSidebar title="闲置市场" subtitle="简洁但完整的交易体验" :items="navItems" />
     </aside>
     <main class="main">
       <header class="topbar panel">
-        <div>
-          <div class="pill">高级版二手交易平台</div>
-          <h1>交易、搜索、聊天、AI 辅助在一个工作台完成</h1>
+        <div class="topbar-copy">
+          <div class="eyebrow">Marketplace</div>
+          <h1>二手交易</h1>
+          <p class="topbar-meta">围绕发现、沟通、下单与履约组织页面，把复杂功能收进更清晰的流转里。</p>
         </div>
         <div class="actions">
           <el-popover v-if="userStore.isAuthenticated" placement="bottom-end" :width="460" trigger="click">
@@ -15,8 +16,8 @@
               <el-badge :value="uiStore.unreadNotifications" :hidden="!uiStore.unreadNotifications">
                 <el-button plain>
                   通知中心
-                  <el-tag size="small" effect="plain" :type="wsStatusType" style="margin-left: 8px;">
-                    {{ wsStatusLabel }}
+                  <el-tag size="small" effect="plain" :type="presenceType" style="margin-left: 8px;">
+                    {{ presenceLabel }}
                   </el-tag>
                 </el-button>
               </el-badge>
@@ -26,11 +27,13 @@
               :loading="uiStore.notificationLoading"
               :error="uiStore.notificationError"
               :unread-count="uiStore.unreadNotifications"
+              :presence-status="userStore.profile?.presence_status || 'OFFLINE'"
               :ws-status="uiStore.wsStatus"
               :last-synced-at="uiStore.lastNotificationSyncAt"
               :marking-id="uiStore.markingNotificationId"
               @refresh="uiStore.syncNotifications()"
               @mark-read="uiStore.markNotificationRead"
+              @update-presence="updatePresenceStatus"
             />
           </el-popover>
           <RouterLink v-if="!userStore.isAuthenticated" to="/login">
@@ -47,7 +50,7 @@
               <el-button>{{ userStore.profile?.display_name || '用户' }}</el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item @click="router.push('/profile')">个人中心</el-dropdown-item>
+                  <el-dropdown-item @click="router.push('/profile')">我的</el-dropdown-item>
                   <el-dropdown-item @click="logout">退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -65,6 +68,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 import AppSidebar from '../components/AppSidebar.vue'
 import NotificationCenter from '../components/NotificationCenter.vue'
@@ -77,33 +81,38 @@ const uiStore = useUiStore()
 
 const navItems = computed(() => [
   { to: '/', label: '首页', icon: 'House' },
-  { to: '/publish', label: '发布商品', icon: 'Plus' },
-  { to: '/orders', label: '我的订单', icon: 'Tickets' },
-  { to: '/favorites', label: '我的收藏', icon: 'Star' },
-  { to: '/profile', label: '个人中心', icon: 'User' }
+  { to: '/messages', label: '消息', icon: 'ChatDotRound', activePrefix: '/messages' },
+  { to: '/publish', label: '发布', icon: 'UploadFilled', activePrefix: '/publish' },
+  { to: '/orders', label: '订单', icon: 'Tickets', activePrefix: '/orders' },
+  { to: '/profile', label: '我的', icon: 'User', activePrefix: '/profile' }
 ])
 
-const wsStatusLabel = computed(() => {
+const presenceLabel = computed(() => {
   const labels = {
-    OPEN: '在线',
-    CONNECTING: '连接中',
-    CLOSED: '离线',
-    ERROR: '异常',
-    IDLE: '空闲'
+    ONLINE: '在线',
+    INVISIBLE: '隐身',
+    OFFLINE: '离线'
   }
-  return labels[uiStore.wsStatus] || uiStore.wsStatus
+  return labels[userStore.profile?.presence_status] || '离线'
 })
 
-const wsStatusType = computed(() => {
+const presenceType = computed(() => {
   const types = {
-    OPEN: 'success',
-    CONNECTING: 'warning',
-    CLOSED: 'info',
-    ERROR: 'danger',
-    IDLE: 'info'
+    ONLINE: 'success',
+    INVISIBLE: 'warning',
+    OFFLINE: 'info'
   }
-  return types[uiStore.wsStatus] || 'info'
+  return types[userStore.profile?.presence_status] || 'info'
 })
+
+async function updatePresenceStatus(nextStatus) {
+  try {
+    await userStore.setPresenceStatus(nextStatus)
+    ElMessage.success('消息状态已更新')
+  } catch (error) {
+    ElMessage.error(error.message)
+  }
+}
 
 function logout() {
   userStore.clearSession()
@@ -115,7 +124,7 @@ function logout() {
 .shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 248px 1fr;
 }
 
 .left {
@@ -127,7 +136,7 @@ function logout() {
 }
 
 .topbar {
-  padding: 24px;
+  padding: 18px 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -135,15 +144,31 @@ function logout() {
 }
 
 .topbar h1 {
-  margin: 14px 0 0;
-  font-size: 1.8rem;
-  max-width: 580px;
+  margin: 0 0 4px;
+  font-family: var(--font-ui);
+  font-size: clamp(1.2rem, 1.8vw, 1.55rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.topbar-copy {
+  max-width: 560px;
+}
+
+.topbar-meta {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .actions {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 @media (max-width: 960px) {
@@ -162,6 +187,10 @@ function logout() {
   .topbar {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .actions {
+    justify-content: flex-start;
   }
 }
 </style>

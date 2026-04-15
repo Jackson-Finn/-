@@ -18,9 +18,9 @@ onMounted(async () => {
 })
 
 watch(
-  () => userStore.profile?.id,
-  async (userId) => {
-    await uiStore.connectRealtime(userId)
+  () => [userStore.profile?.id, userStore.profile?.presence_status],
+  async ([userId, presenceStatus]) => {
+    await uiStore.connectRealtime(userId, presenceStatus || 'OFFLINE')
   },
   { immediate: true }
 )

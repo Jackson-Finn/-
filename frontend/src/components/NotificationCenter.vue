@@ -9,7 +9,11 @@
         </p>
       </div>
       <el-space wrap>
-        <el-tag :type="statusType" effect="plain">{{ wsStatusLabel }}</el-tag>
+        <PresenceSelector
+          :model-value="presenceStatus"
+          @update:model-value="$emit('update-presence', $event)"
+        />
+        <el-tag :type="statusType" effect="plain">{{ syncStatusLabel }}</el-tag>
         <el-button text @click="$emit('refresh')">刷新</el-button>
       </el-space>
     </div>
@@ -55,7 +59,7 @@
           class="notification-item"
           :class="{ unread: !item.read, marking: markingId === item.id }"
           :disabled="markingId === item.id"
-          @click="$emit('mark-read', item.id)"
+          @click="openNotification(item)"
         >
           <div class="notification-head">
             <div class="title-block">
@@ -79,6 +83,11 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+
+import PresenceSelector from './PresenceSelector.vue'
+
+const router = useRouter()
 
 const props = defineProps({
   notifications: {
@@ -97,6 +106,10 @@ const props = defineProps({
     type: Number,
     default: 0
   },
+  presenceStatus: {
+    type: String,
+    default: 'OFFLINE'
+  },
   wsStatus: {
     type: String,
     default: 'IDLE'
@@ -111,7 +124,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['refresh', 'mark-read'])
+const emit = defineEmits(['refresh', 'mark-read', 'update-presence'])
 
 const orderedNotifications = computed(() =>
   [...props.notifications].sort((left, right) => Number(left.read) - Number(right.read))
@@ -119,11 +132,11 @@ const orderedNotifications = computed(() =>
 
 const readCount = computed(() => props.notifications.filter((item) => item.read).length)
 
-const wsStatusLabel = computed(() => {
+const syncStatusLabel = computed(() => {
   const labels = {
-    OPEN: '在线',
+    OPEN: '实时同步',
     CONNECTING: '连接中',
-    CLOSED: '已断开',
+    CLOSED: '未实时连接',
     ERROR: '异常',
     IDLE: '空闲'
   }
@@ -158,6 +171,13 @@ function formatTime(value) {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+function openNotification(item) {
+  emit('mark-read', item.id)
+  if (item.action_target) {
+    router.push(item.action_target)
+  }
 }
 </script>
 

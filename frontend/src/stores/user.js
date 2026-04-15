@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { authApi } from '../api/auth'
+import { interactionApi } from '../api/interaction'
 
 const TOKEN_KEY = 'advanced-marketplace-token'
 
@@ -42,6 +43,15 @@ export const useUserStore = defineStore('user', () => {
     await login({ email: payload.email, password: payload.password })
   }
 
+  async function setPresenceStatus(presenceStatus) {
+    if (!token.value || !profile.value) return
+    const result = await interactionApi.updatePresence({ presence_status: presenceStatus })
+    profile.value = {
+      ...profile.value,
+      presence_status: result.presence_status
+    }
+  }
+
   function clearSession() {
     token.value = ''
     profile.value = null
@@ -58,7 +68,7 @@ export const useUserStore = defineStore('user', () => {
     bootstrap,
     login,
     register,
+    setPresenceStatus,
     clearSession
   }
 })
-

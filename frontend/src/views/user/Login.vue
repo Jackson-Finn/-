@@ -5,6 +5,7 @@
         <div>
           <div class="pill">欢迎回来</div>
           <h2 class="section-title">登录高级版交易平台</h2>
+          <p class="section-meta">默认已切到演示买家账号，便于直接查看收藏、最近浏览和下单流程。</p>
         </div>
       </div>
       <el-form :model="form" label-position="top" @submit.prevent="onSubmit">
@@ -33,8 +34,8 @@ const route = useRoute()
 const userStore = useUserStore()
 const loading = ref(false)
 const form = reactive({
-  email: 'admin@example.com',
-  password: 'Admin123!'
+  email: 'buyer@example.com',
+  password: 'Buyer123!'
 })
 
 async function onSubmit() {
@@ -67,4 +68,3 @@ async function onSubmit() {
   margin-left: 16px;
 }
 </style>
-

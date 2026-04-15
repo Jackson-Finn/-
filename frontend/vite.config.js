@@ -1,11 +1,35 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+
+function vendorChunk(id) {
+  if (!id.includes('node_modules')) {
+    return null
+  }
+
+  if (id.includes('/echarts/')) {
+    return 'charts'
+  }
+
+  if (id.includes('/zrender/')) {
+    return 'charts-renderer'
+  }
+  
+  return null
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
-    plugins: [vue()],
+    plugins: [
+      vue(),
+      Components({
+        dts: false,
+        resolvers: [ElementPlusResolver({ importStyle: 'css' })]
+      })
+    ],
     server: {
       host: '0.0.0.0',
       port: Number(env.VITE_PORT || 5173),
@@ -24,11 +48,8 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 900,
       rollupOptions: {
         output: {
-          manualChunks: {
-            vue: ['vue', 'vue-router', 'pinia'],
-            ui: ['element-plus', '@element-plus/icons-vue'],
-            charts: ['echarts'],
-            http: ['axios']
+          manualChunks(id) {
+            return vendorChunk(id)
           }
         }
       }

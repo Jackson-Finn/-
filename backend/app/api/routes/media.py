@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -25,11 +25,28 @@ class UploadCompleteRequest(BaseModel):
 @router.post("/upload-init")
 def upload_init(payload: UploadInitRequest, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     asset = CatalogService(db).upload_init(current_user.id, payload.filename, payload.mime_type)
-    return APIResponse(data={"id": asset.id, "object_key": asset.object_key, "url": asset.url})
+    return APIResponse(
+        data={
+            "id": asset.id,
+            "object_key": asset.object_key,
+            "url": asset.url,
+            "upload_path": f"/api/media/{asset.id}/file",
+        }
+    )
+
+
+@router.post("/{asset_id}/file")
+def upload_file(
+    asset_id: int,
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    asset = CatalogService(db).upload_file(asset_id, current_user.id, file)
+    return APIResponse(data={"id": asset.id, "url": asset.url, "metadata": asset.metadata_json})
 
 
 @router.post("/complete")
-def upload_complete(payload: UploadCompleteRequest, db: Session = Depends(get_db)):
-    asset = CatalogService(db).complete_upload(payload.asset_id, payload.width, payload.height)
-    return APIResponse(data={"id": asset.id, "metadata": asset.metadata_json})
-
+def upload_complete(payload: UploadCompleteRequest, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    asset = CatalogService(db).complete_upload(payload.asset_id, current_user.id, payload.width, payload.height)
+    return APIResponse(data={"id": asset.id, "url": asset.url, "metadata": asset.metadata_json})

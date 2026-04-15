@@ -1,40 +1,36 @@
 <template>
   <section class="panel data-state-card" :class="`state-${state}`">
-    <div v-if="state === 'loading'" class="state-block">
-      <div class="section-header">
-        <div>
-          <h3 class="section-title">{{ title }}</h3>
-          <p class="section-meta">{{ description }}</p>
-        </div>
-        <el-tag effect="plain" type="info">加载中</el-tag>
+    <div v-if="state === 'loading'" class="state-shell">
+      <div class="state-copy">
+        <p class="state-label">加载中</p>
+        <h3>{{ title }}</h3>
+        <p>{{ description }}</p>
       </div>
       <el-skeleton animated :rows="rows" />
     </div>
 
-    <el-result
-      v-else-if="state === 'error'"
-      icon="error"
-      :title="errorTitle || title"
-      :sub-title="errorDescription || description"
-    >
-      <template #extra>
-        <el-space wrap>
-          <el-button type="primary" @click="$emit('retry')">重新加载</el-button>
-          <slot name="error-action" />
-        </el-space>
-      </template>
-    </el-result>
+    <div v-else-if="state === 'error'" class="state-shell">
+      <div class="state-copy">
+        <p class="state-label tone-danger">加载异常</p>
+        <h3>{{ errorTitle || title }}</h3>
+        <p>{{ errorDescription || description }}</p>
+      </div>
+      <div class="state-actions">
+        <el-button type="primary" @click="$emit('retry')">重新加载</el-button>
+        <slot name="error-action" />
+      </div>
+    </div>
 
-    <el-result
-      v-else-if="state === 'empty'"
-      icon="info"
-      :title="emptyTitle || title"
-      :sub-title="emptyDescription || description"
-    >
-      <template #extra>
+    <div v-else-if="state === 'empty'" class="state-shell">
+      <div class="state-copy">
+        <p class="state-label">暂时为空</p>
+        <h3>{{ emptyTitle || title }}</h3>
+        <p>{{ emptyDescription || description }}</p>
+      </div>
+      <div class="state-actions">
         <slot name="empty-action" />
-      </template>
-    </el-result>
+      </div>
+    </div>
 
     <slot v-else />
   </section>
@@ -82,16 +78,44 @@ defineEmits(['retry'])
 <style scoped>
 .data-state-card {
   overflow: hidden;
+  min-height: 100%;
 }
 
-.data-state-card :deep(.el-result) {
-  padding: 28px 0 12px;
+.state-shell {
+  display: grid;
+  gap: 22px;
+  padding: 28px;
 }
 
-.state-block {
-  padding: 24px;
+.state-copy h3 {
+  margin: 6px 0 0;
+  font-size: 1.18rem;
+  line-height: 1.25;
+}
+
+.state-copy p:last-child {
+  margin: 10px 0 0;
+  max-width: 52ch;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.state-label {
+  margin: 0;
+  color: var(--muted-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tone-danger {
+  color: var(--danger);
+}
+
+.state-actions {
   display: flex;
-  flex-direction: column;
-  gap: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 </style>

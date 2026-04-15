@@ -1,159 +1,199 @@
 <template>
-  <div class="grid">
-    <section class="panel hero-card">
-      <div class="section-header">
-        <div>
-          <div class="pill">Platform + Intelligence</div>
-          <h2 class="section-title">一个页面演示搜索、推荐、交易与治理型能力</h2>
-          <p class="section-meta">前台围绕“发现商品 -> 判断可信度 -> 互动议价 -> 完成交易”展开。</p>
-        </div>
-        <el-space wrap>
+  <div class="home-page">
+    <section class="panel search-hero">
+      <div class="hero-copy">
+        <div class="eyebrow">Discover</div>
+        <h2 class="hero-title">更少按钮，更完整的交易路径。</h2>
+        <p class="section-meta">从搜索开始，快速进入商品、卖家沟通和订单履约，不再把关键动作散落在各个页面里。</p>
+      </div>
+
+      <div class="hero-panel">
+        <div class="search-bar">
           <el-autocomplete
             v-model="keyword"
             :fetch-suggestions="querySuggestions"
             clearable
-            placeholder="搜索商品、描述或关键词"
-            @select="loadProducts"
-            @keyup.enter="loadProducts"
+            placeholder="搜索商品、场景或预算，例如：九成新 switch 800 以内"
+            @select="submitSearch"
+            @keyup.enter="submitSearch"
           />
-          <el-button type="primary" @click="loadProducts">搜索</el-button>
-        </el-space>
-      </div>
-
-      <el-alert
-        v-if="pageError"
-        :title="pageError"
-        type="warning"
-        show-icon
-        :closable="false"
-        style="margin-bottom: 18px;"
-      />
-
-      <div class="grid grid-4">
-        <StatPanel label="推荐商品" :value="recommendations.length" description="首页推荐结果" />
-        <StatPanel label="最近浏览" :value="history.length" description="用户行为沉淀" />
-        <StatPanel label="收藏数" :value="favorites.length" description="行为素材输入推荐" />
-        <StatPanel label="消息状态" :value="uiStore.wsStatus" description="实时通知与会话状态" />
+          <el-button type="primary" :loading="searchAssistLoading" @click="submitSearch">搜索</el-button>
+        </div>
+        <p class="search-brief">{{ searchBrief }}</p>
+        <div class="hero-links">
+          <RouterLink class="hero-link" to="/messages">去看消息</RouterLink>
+          <RouterLink class="hero-link" to="/orders">处理订单</RouterLink>
+          <RouterLink class="hero-link" to="/profile">进入我的</RouterLink>
+        </div>
       </div>
     </section>
 
-    <section class="grid grid-2">
-      <DataStateCard
-        :state="recommendationState"
-        title="推荐流"
-        description="基于行为与规则生成的首页内容"
-        empty-title="暂无推荐内容"
-        empty-description="系统还在整理你的行为素材，稍后再试或刷新推荐。"
-        error-title="推荐加载失败"
-        :error-description="recommendationError"
-        @retry="loadRecommendations"
-      >
-        <div class="panel" style="padding: 22px;">
+    <el-alert
+      v-if="pageError"
+      :title="pageError"
+      type="warning"
+      show-icon
+      :closable="false"
+    />
+
+    <DataStateCard
+      :state="recommendationState"
+      title="推荐流"
+      description="先看最值得展开比较的商品，再决定是否联系卖家。"
+      empty-title="还没有推荐内容"
+      empty-description="系统还在整理你的交易信号，稍后刷新即可。"
+      error-title="推荐加载失败"
+      :error-description="recommendationError"
+      @retry="loadRecommendations"
+    >
+      <section class="panel section-panel">
         <div class="section-header">
           <div>
+            <div class="eyebrow">Recommendations</div>
             <h3 class="section-title">推荐流</h3>
-            <p class="section-meta">基于行为与规则生成的首页内容</p>
+            <p class="section-meta">理由会直接展示出来，帮助你更快判断为什么值得看。</p>
           </div>
           <el-button plain @click="loadRecommendations">刷新推荐</el-button>
         </div>
-        <div class="grid">
-          <ProductCard v-for="item in recommendations" :key="item.product_id" :product="{ ...item, id: item.product_id }">
-            <div class="pill">{{ item.reason }}</div>
+
+        <article v-if="featuredRecommendation" class="featured-card">
+          <div class="featured-copy">
+            <span class="featured-badge">Top Pick</span>
+            <h3>{{ featuredRecommendation.title }}</h3>
+            <p class="section-meta">{{ featuredRecommendation.reason || '系统根据浏览、收藏和订单信号整理出这条推荐。' }}</p>
+            <div class="featured-meta">
+              <span class="meta-pill">¥ {{ Number(featuredRecommendation.price || 0).toFixed(2) }}</span>
+              <span v-if="featuredRecommendation.category_name" class="meta-pill">{{ featuredRecommendation.category_name }}</span>
+              <span v-if="featuredRecommendation.seller_name" class="meta-pill">{{ featuredRecommendation.seller_name }}</span>
+            </div>
+            <RouterLink :to="`/products/${featuredRecommendation.product_id}`">
+              <el-button type="primary">查看详情</el-button>
+            </RouterLink>
+          </div>
+          <img
+            v-if="featuredRecommendation.cover_image"
+            :src="featuredRecommendation.cover_image"
+            :alt="featuredRecommendation.title"
+            class="featured-cover"
+          >
+        </article>
+
+        <div class="catalog-grid">
+          <ProductCard
+            v-for="item in recommendationCards"
+            :key="item.product_id"
+            :product="{ ...item, id: item.product_id }"
+          >
+            <span class="pill">{{ item.reason }}</span>
           </ProductCard>
-        </div>
-        </div>
-      </DataStateCard>
-
-      <div class="panel" style="padding: 22px;">
-        <div class="section-header">
-          <div>
-            <h3 class="section-title">AI 发布辅助</h3>
-            <p class="section-meta">用关键词生成标题和描述，再进行风险预审</p>
-          </div>
-        </div>
-        <el-form label-position="top">
-          <el-form-item label="关键词">
-            <el-input v-model="aiKeywords" placeholder="例如：switch、九成新、原装配件" />
-          </el-form-item>
-          <el-form-item label="类目">
-            <el-input v-model="aiCategory" placeholder="数码" />
-          </el-form-item>
-          <el-space wrap>
-            <el-button type="primary" @click="generateDraft">生成草稿</el-button>
-            <el-button @click="previewModeration" :disabled="!aiDraft.title">风险预审</el-button>
-          </el-space>
-        </el-form>
-        <el-divider />
-        <pre class="code">{{ aiDraft }}</pre>
-        <div v-if="moderation.risk_level" class="pill">风险等级 {{ moderation.risk_level }}</div>
-      </div>
-    </section>
-
-    <DataStateCard
-      :state="productState"
-      title="商品大厅"
-      description="搜索结果与最新商品同屏展示"
-      empty-title="暂无商品"
-      empty-description="试试更换关键词，或者稍后刷新查看最新商品。"
-      error-title="商品加载失败"
-      :error-description="productError"
-      @retry="loadProducts"
-    >
-      <section class="panel" style="padding: 22px;">
-        <div class="section-header">
-          <div>
-            <h3 class="section-title">商品大厅</h3>
-            <p class="section-meta">搜索结果与最新商品同屏展示</p>
-          </div>
-          <el-tag effect="plain">{{ products.length }} 件商品</el-tag>
-        </div>
-        <div class="grid grid-3">
-          <ProductCard v-for="product in products" :key="product.id" :product="product" />
         </div>
       </section>
     </DataStateCard>
+
+    <section class="panel section-panel">
+      <div class="section-header">
+        <div>
+          <div class="eyebrow">Signals</div>
+          <h3 class="section-title">最近交易信号</h3>
+          <p class="section-meta">把消息、通知、收藏和最近浏览收在一处，减少反复找入口。</p>
+        </div>
+      </div>
+
+      <div class="signal-grid">
+        <RouterLink to="/messages" class="signal-card">
+          <strong>{{ workspace.unread_messages }}</strong>
+          <span>未读消息</span>
+          <p>直接进入会话，继续处理正在沟通的商品。</p>
+        </RouterLink>
+        <RouterLink to="/orders" class="signal-card">
+          <strong>{{ workspace.active_orders }}</strong>
+          <span>进行中订单</span>
+          <p>确认收货、补评价和查看履约进度都从这里处理。</p>
+        </RouterLink>
+        <RouterLink to="/favorites" class="signal-card">
+          <strong>{{ workspace.favorites }}</strong>
+          <span>收藏夹</span>
+          <p>回到候选商品继续比较，不必重新搜索。</p>
+        </RouterLink>
+        <RouterLink to="/history" class="signal-card">
+          <strong>{{ workspace.recent_history }}</strong>
+          <span>最近浏览</span>
+          <p>把最近看过的商品线索重新收回来。</p>
+        </RouterLink>
+      </div>
+
+      <div class="signal-detail-grid">
+        <section class="signal-panel">
+          <div class="mini-head">
+            <strong>最近浏览</strong>
+            <RouterLink to="/history">查看全部</RouterLink>
+          </div>
+          <RouterLink
+            v-for="item in history.slice(0, 3)"
+            :key="item.id"
+            class="mini-link"
+            :to="`/products/${item.product_summary?.id || item.product_id}`"
+          >
+            <span>{{ item.product_summary?.title || `商品 #${item.product_id}` }}</span>
+            <small>{{ item.product_summary?.seller_name || '卖家' }}</small>
+          </RouterLink>
+          <el-empty v-if="!history.length" description="还没有最近浏览记录" />
+        </section>
+
+        <section class="signal-panel">
+          <div class="mini-head">
+            <strong>通知与状态</strong>
+            <RouterLink to="/profile">进入我的</RouterLink>
+          </div>
+          <div class="status-row">
+            <span>消息同步</span>
+            <el-tag :type="wsStatusType" effect="plain">{{ wsStatusLabel }}</el-tag>
+          </div>
+          <div class="status-row">
+            <span>未读通知</span>
+            <strong>{{ workspace.unread_notifications }}</strong>
+          </div>
+          <div class="status-row">
+            <span>当前状态</span>
+            <strong>{{ presenceLabel }}</strong>
+          </div>
+        </section>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 
 import DataStateCard from '../../components/DataStateCard.vue'
 import ProductCard from '../../components/ProductCard.vue'
-import StatPanel from '../../components/StatPanel.vue'
+import { authApi } from '../../api/auth'
 import { productApi } from '../../api/products'
 import { tradeApi } from '../../api/trade'
 import { useUiStore } from '../../stores/ui'
+import { useUserStore } from '../../stores/user'
 
+const router = useRouter()
 const uiStore = useUiStore()
+const userStore = useUserStore()
+
 const keyword = ref('')
-const aiKeywords = ref('switch, 九成新, 原装配件')
-const aiCategory = ref('数码')
-const aiDraft = ref({})
-const moderation = ref({})
-const products = ref([])
+const workspace = ref({
+  unread_messages: 0,
+  unread_notifications: 0,
+  favorites: 0,
+  recent_history: 0,
+  active_orders: 0
+})
 const recommendations = ref([])
 const history = ref([])
-const favorites = ref([])
-const productLoading = ref(false)
-const productError = ref('')
 const recommendationLoading = ref(false)
 const recommendationError = ref('')
 const pageError = ref('')
-
-async function loadProducts() {
-  productLoading.value = true
-  productError.value = ''
-  try {
-    products.value = await productApi.list(keyword.value ? { keyword: keyword.value } : {})
-  } catch (error) {
-    productError.value = error.message
-    throw error
-  } finally {
-    productLoading.value = false
-  }
-}
+const searchBrief = ref('支持直接输入预算、类目和成色，系统会尽量整理成可执行搜索条件。')
+const searchAssistLoading = ref(false)
 
 async function loadRecommendations() {
   recommendationLoading.value = true
@@ -170,19 +210,29 @@ async function loadRecommendations() {
   }
 }
 
-async function loadBehaviorData() {
-  try {
-    history.value = await tradeApi.recentHistory()
-    favorites.value = await tradeApi.listFavorites()
-  } catch {
+async function loadWorkspace() {
+  if (!userStore.isAuthenticated) {
+    workspace.value = {
+      unread_messages: 0,
+      unread_notifications: 0,
+      favorites: 0,
+      recent_history: 0,
+      active_orders: 0
+    }
     history.value = []
-    favorites.value = []
+    return
   }
+  const [workspaceSummary, recentHistory] = await Promise.all([
+    authApi.workspace(),
+    tradeApi.recentHistory()
+  ])
+  workspace.value = workspaceSummary
+  history.value = recentHistory || []
 }
 
 async function loadPage() {
   pageError.value = ''
-  const results = await Promise.allSettled([loadProducts(), loadRecommendations(), loadBehaviorData()])
+  const results = await Promise.allSettled([loadRecommendations(), loadWorkspace()])
   const failed = results.filter((item) => item.status === 'rejected').map((item) => item.reason?.message).filter(Boolean)
   pageError.value = failed.join('；')
 }
@@ -196,32 +246,26 @@ async function querySuggestions(queryString, cb) {
   }
 }
 
-async function generateDraft() {
-  const result = await productApi.aiDraft({
-    keywords: aiKeywords.value.split(',').map((item) => item.trim()).filter(Boolean),
-    category: aiCategory.value
-  })
-  aiDraft.value = result
-  ElMessage.success('AI 草稿已生成')
+async function submitSearch() {
+  const raw = keyword.value.trim()
+  if (!raw) {
+    router.push({ name: 'search' })
+    return
+  }
+  searchAssistLoading.value = true
+  try {
+    const assist = await productApi.aiSearchAssist({ query: raw })
+    searchBrief.value = assist.search_brief || searchBrief.value
+    const filters = Object.fromEntries(
+      Object.entries(assist.structured_filters || {}).filter(([, value]) => value !== null && value !== undefined && value !== '')
+    )
+    router.push({ name: 'search', query: filters })
+  } finally {
+    searchAssistLoading.value = false
+  }
 }
 
-async function previewModeration() {
-  moderation.value = await productApi.aiModeration({
-    title: aiDraft.value.title || '',
-    description: aiDraft.value.description || ''
-  })
-}
-
-onMounted(async () => {
-  await loadPage()
-})
-
-const productState = computed(() => {
-  if (productLoading.value) return 'loading'
-  if (productError.value) return 'error'
-  if (!products.value.length) return 'empty'
-  return 'ready'
-})
+onMounted(loadPage)
 
 const recommendationState = computed(() => {
   if (recommendationLoading.value) return 'loading'
@@ -229,14 +273,252 @@ const recommendationState = computed(() => {
   if (!recommendations.value.length) return 'empty'
   return 'ready'
 })
+
+const featuredRecommendation = computed(() => recommendations.value[0] || null)
+const recommendationCards = computed(() => recommendations.value.slice(featuredRecommendation.value ? 1 : 0))
+
+const wsStatusLabel = computed(() => {
+  const mapping = {
+    OPEN: '实时同步',
+    CONNECTING: '连接中',
+    CLOSED: '未实时连接',
+    ERROR: '同步异常',
+    IDLE: '空闲'
+  }
+  return mapping[uiStore.wsStatus] || uiStore.wsStatus
+})
+
+const wsStatusType = computed(() => {
+  if (uiStore.wsStatus === 'OPEN') return 'success'
+  if (uiStore.wsStatus === 'CONNECTING') return 'warning'
+  if (uiStore.wsStatus === 'ERROR') return 'danger'
+  return 'info'
+})
+
+const presenceLabel = computed(() => {
+  const mapping = {
+    ONLINE: '在线',
+    INVISIBLE: '隐身',
+    OFFLINE: '离线'
+  }
+  return mapping[userStore.profile?.presence_status] || '离线'
+})
 </script>
 
 <style scoped>
-.code {
+.home-page {
+  display: grid;
+  gap: 20px;
+}
+
+.search-hero,
+.section-panel {
+  padding: 24px;
+}
+
+.search-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.95fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.hero-copy {
+  display: grid;
+  gap: 14px;
+}
+
+.hero-title {
   margin: 0;
-  padding: 14px;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+}
+
+.hero-panel {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 242, 234, 0.92));
+  border: 1px solid var(--line);
+}
+
+.search-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.search-brief {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hero-link {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.featured-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) 280px;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(249, 251, 255, 0.98), rgba(255, 255, 255, 0.94));
+  margin-bottom: 18px;
+}
+
+.featured-copy {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.featured-copy h3 {
+  margin: 0;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.featured-badge,
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.featured-badge {
+  width: fit-content;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+.featured-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meta-pill {
+  background: rgba(73, 57, 41, 0.06);
+  color: var(--muted-strong);
+}
+
+.featured-cover {
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.signal-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.signal-card {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: rgba(255, 252, 247, 0.96);
+}
+
+.signal-card strong {
+  font-size: 1.8rem;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.signal-card span {
+  font-weight: 800;
+}
+
+.signal-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.signal-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.signal-panel {
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(73, 57, 41, 0.04);
+  display: grid;
+  gap: 12px;
+}
+
+.mini-head,
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mini-link {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(36, 92, 90, 0.08);
-  overflow: auto;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.mini-link small {
+  color: var(--muted);
+}
+
+@media (max-width: 1180px) {
+  .search-hero,
+  .featured-card,
+  .signal-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .signal-grid,
+  .catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .search-bar,
+  .signal-grid,
+  .catalog-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

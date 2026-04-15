@@ -25,5 +25,4 @@ def remove_favorite(product_id: int, current_user=Depends(get_current_user), db:
 @router.get("")
 def list_favorites(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     favorites = TradeService(db).list_favorites(current_user.id)
-    return APIResponse(data=[{"id": favorite.id, "product_id": favorite.product_id} for favorite in favorites])
-
+    return APIResponse(data=favorites)

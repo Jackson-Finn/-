@@ -1,6 +1,7 @@
 import importlib
 import os
 import sys
+from base64 import b64decode
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -30,6 +31,33 @@ def test_marketplace_core_flow(tmp_path: Path):
         admin_token = login(client, "admin@example.com", "Admin123!")
         seller_token = login(client, "seller@example.com", "Seller123!")
         buyer_token = login(client, "buyer@example.com", "Buyer123!")
+        tiny_png = b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO6Wn2QAAAAASUVORK5CYII=")
+
+        init_asset = client.post(
+            "/api/media/upload-init",
+            headers=auth_header(seller_token),
+            json={"filename": "macbook.jpg", "mime_type": "image/jpeg"},
+        )
+        assert init_asset.status_code == 200
+        asset_id = init_asset.json()["data"]["id"]
+
+        upload_asset = client.post(
+            f"/api/media/{asset_id}/file",
+            headers=auth_header(seller_token),
+            files={"file": ("macbook.png", tiny_png, "image/png")},
+        )
+        assert upload_asset.status_code == 200
+        assert upload_asset.json()["data"]["metadata"]["stage"] == "uploaded"
+
+        complete_asset = client.post(
+            "/api/media/complete",
+            headers=auth_header(seller_token),
+            json={"asset_id": asset_id, "width": 1200, "height": 900},
+        )
+        assert complete_asset.status_code == 200
+        assert complete_asset.json()["data"]["metadata"]["stage"] == "completed"
+        assert complete_asset.json()["data"]["metadata"]["variants"]["preview"].endswith("-preview.webp")
+        assert complete_asset.json()["data"]["metadata"]["variants"]["compressed"].endswith("-compressed.webp")
 
         create_product = client.post(
             "/api/products",
@@ -40,24 +68,62 @@ def test_marketplace_core_flow(tmp_path: Path):
                 "price": 5299,
                 "stock": 1,
                 "category_id": 1,
+                "asset_ids": [asset_id],
             },
         )
         assert create_product.status_code == 200
         product_id = create_product.json()["data"]["id"]
         assert create_product.json()["data"]["audit_status"] == "PENDING"
+        assert len(create_product.json()["data"]["images"]) == 1
 
         pending = client.get("/api/admin/products/pending", headers=auth_header(admin_token))
         assert pending.status_code == 200
         assert any(item["id"] == product_id for item in pending.json()["data"])
 
+        product_list = client.get("/api/admin/products", headers=auth_header(admin_token), params={"keyword": "MacBook"})
+        assert product_list.status_code == 200
+        assert any(item["id"] == product_id for item in product_list.json()["data"])
+
+        product_context_before = client.get(
+            f"/api/admin/products/{product_id}",
+            headers=auth_header(admin_token),
+        )
+        assert product_context_before.status_code == 200
+        assert product_context_before.json()["data"]["product"]["audit_status"] == "PENDING"
+
+        request_changes = client.post(
+            f"/api/admin/products/{product_id}/audit",
+            headers=auth_header(admin_token),
+            json={"decision": "REQUEST_CHANGES", "note": "请补充更多细节图"},
+        )
+        assert request_changes.status_code == 200
+        assert request_changes.json()["data"]["audit_status"] == "CHANGES_REQUESTED"
+        assert request_changes.json()["data"]["product_status"] == "NEEDS_REVISION"
+
+        resubmit_product = client.post(
+            f"/api/products/{product_id}/resubmit",
+            headers=auth_header(seller_token),
+        )
+        assert resubmit_product.status_code == 200
+        assert resubmit_product.json()["data"]["audit_status"] == "PENDING"
+
         audit = client.post(
             f"/api/admin/products/{product_id}/audit",
             headers=auth_header(admin_token),
-            json={"approved": True, "note": "信息完整，允许上架"},
+            json={"decision": "APPROVE", "note": "信息完整，允许上架"},
         )
         assert audit.status_code == 200
         assert audit.json()["data"]["audit_status"] == "APPROVED"
         assert audit.json()["data"]["product_status"] == "ACTIVE"
+
+        product_context_after = client.get(
+            f"/api/admin/products/{product_id}",
+            headers=auth_header(admin_token),
+        )
+        assert product_context_after.status_code == 200
+        after_payload = product_context_after.json()["data"]
+        assert after_payload["product"]["audit_status"] == "APPROVED"
+        assert any(item["action"] == "product.audit" for item in after_payload["operations"])
 
         order = client.post(
             "/api/orders",
@@ -75,6 +141,14 @@ def test_marketplace_core_flow(tmp_path: Path):
         )
         assert session.status_code == 200
         session_id = session.json()["data"]["id"]
+
+        session_again = client.post(
+            "/api/chat/sessions",
+            headers=auth_header(buyer_token),
+            json={"product_id": product_id, "seller_id": 2},
+        )
+        assert session_again.status_code == 200
+        assert session_again.json()["data"]["id"] == session_id
 
         message = client.post(
             f"/api/chat/sessions/{session_id}/messages",
@@ -94,6 +168,27 @@ def test_marketplace_core_flow(tmp_path: Path):
             json={"order_id": order_id, "rating": 5, "content": "机器很新，沟通高效"},
         )
         assert review.status_code == 200
+
+        orders_after_review = client.get("/api/orders", headers=auth_header(buyer_token))
+        assert orders_after_review.status_code == 200
+        reviewed_order = next(item for item in orders_after_review.json()["data"] if item["id"] == order_id)
+        assert reviewed_order["can_review_product"] is True
+        assert reviewed_order["product_review"]["rating"] == 5
+        assert reviewed_order["product_review"]["content"] == "机器很新，沟通高效"
+
+        update_review = client.post(
+            "/api/reviews",
+            headers=auth_header(buyer_token),
+            json={"order_id": order_id, "product_review": {"rating": 3, "content": "到手后发现成色一般，已修改评价"}},
+        )
+        assert update_review.status_code == 200
+        assert update_review.json()["data"][0]["rating"] == 3
+        assert update_review.json()["data"][0]["content"] == "到手后发现成色一般，已修改评价"
+
+        product_reviews = client.get(f"/api/reviews/products/{product_id}")
+        assert product_reviews.status_code == 200
+        assert product_reviews.json()["data"][0]["rating"] == 3
+        assert product_reviews.json()["data"][0]["content"] == "到手后发现成色一般，已修改评价"
 
         report = client.post(
             "/api/reports",
@@ -151,3 +246,28 @@ def test_marketplace_core_flow(tmp_path: Path):
         recommendations = client.get("/api/recommendations/products/1/related")
         assert recommendations.status_code == 200
         assert "items" in recommendations.json()["data"]
+
+        first_history = client.post(
+            f"/api/history/products/{product_id}/view",
+            headers=auth_header(buyer_token),
+        )
+        second_history = client.post(
+            f"/api/history/products/{product_id}/view",
+            headers=auth_header(buyer_token),
+        )
+        assert first_history.status_code == 200
+        assert second_history.status_code == 200
+        assert first_history.json()["data"]["id"] == second_history.json()["data"]["id"]
+
+        history_listing = client.get("/api/history/recent", headers=auth_header(buyer_token))
+        assert history_listing.status_code == 200
+        matching_entries = [item for item in history_listing.json()["data"] if item["product_id"] == product_id]
+        assert len(matching_entries) == 1
+
+        off_shelf = client.post(
+            f"/api/admin/products/{product_id}/off-shelf",
+            headers=auth_header(admin_token),
+            json={"note": "演示下架"},
+        )
+        assert off_shelf.status_code == 200
+        assert off_shelf.json()["data"]["product_status"] == "OFF_SHELF"

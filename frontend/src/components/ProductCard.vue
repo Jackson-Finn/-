@@ -1,143 +1,223 @@
 <template>
-  <div class="card panel">
-    <div class="image">
-      <div class="image-letter">{{ initials }}</div>
-      <div class="image-badges">
-        <span class="image-badge">{{ statusLabel }}</span>
-        <span v-if="product.category_name" class="image-badge muted-badge">{{ product.category_name }}</span>
-      </div>
-    </div>
-    <div class="content">
-      <div class="section-header">
-        <div>
-          <h3 class="section-title">{{ product.title || '未命名商品' }}</h3>
-          <p class="section-meta">{{ metaText }}</p>
+  <article class="product-card">
+    <RouterLink :to="`/products/${product.id}`" class="media-link">
+      <div class="media-shell">
+        <img v-if="product.cover_image" class="cover" :src="product.cover_image" :alt="product.title || '商品图片'">
+        <div v-else class="image-placeholder">
+          <span>{{ product.category_name || '精选闲置' }}</span>
+          <strong>{{ initials }}</strong>
         </div>
-        <span class="pill">¥ {{ Number(product.price || 0).toFixed(2) }}</span>
+        <div class="media-badges">
+          <span class="status-pill" :class="`tone-${statusMeta.tone}`">{{ statusMeta.label }}</span>
+          <span v-if="product.condition_label" class="soft-pill">{{ product.condition_label }}</span>
+        </div>
       </div>
-      <p class="muted summary">{{ product.description || '暂无描述，等待卖家补充更多细节。' }}</p>
+    </RouterLink>
+
+    <div class="card-copy">
       <div class="meta-row">
-        <span v-if="product.stock !== undefined" class="meta-pill">库存 {{ product.stock }}</span>
-        <span v-if="product.seller_name" class="meta-pill">卖家 {{ product.seller_name }}</span>
-        <span v-if="product.updated_at" class="meta-pill">更新 {{ formatTime(product.updated_at) }}</span>
+        <span>{{ product.category_name || '商品' }}</span>
+        <span class="meta-dot"></span>
+        <span>{{ product.seller_name || '平台卖家' }}</span>
       </div>
-      <div class="actions">
-        <RouterLink :to="`/products/${product.id}`">
-          <el-button type="primary">查看详情</el-button>
-        </RouterLink>
+      <RouterLink :to="`/products/${product.id}`" class="title-link">
+        <h3>{{ product.title || '未命名商品' }}</h3>
+      </RouterLink>
+      <p class="summary">{{ product.hero_summary || product.description || '卖家暂未补充更多描述。' }}</p>
+      <div class="footer-row">
+        <div class="price-block">
+          <strong>{{ formatPrice(product.price) }}</strong>
+          <span v-if="product.updated_at">更新于 {{ formatShortDate(product.updated_at) }}</span>
+        </div>
         <slot />
       </div>
     </div>
-  </div>
+  </article>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+
+import { formatPrice, formatShortDate, getStatusMeta } from '../utils/marketplace'
 
 const props = defineProps({
   product: { type: Object, required: true }
 })
 
 const initials = computed(() => (props.product.title || 'M').slice(0, 1))
-
-const statusLabel = computed(() => {
-  const status = (props.product.audit_status || props.product.status || 'ACTIVE').toString()
-  const mapping = {
-    ACTIVE: '在售',
-    PENDING: '待审',
-    AUDITED: '已审',
-    REJECTED: '驳回',
-    OFF_SHELF: '下架'
-  }
-  return mapping[status] || status
-})
-
-const metaText = computed(() => {
-  const status = props.product.audit_status || props.product.status || 'ACTIVE'
-  const category = props.product.category_name ? ` · ${props.product.category_name}` : ''
-  return `状态 ${status}${category}`
-})
-
-function formatTime(value) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-  return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
-}
+const statusMeta = computed(() => getStatusMeta(props.product))
 </script>
 
 <style scoped>
-.card {
+.product-card {
+  display: grid;
+  gap: 16px;
   overflow: hidden;
+  padding: 14px;
+  border-radius: 24px;
+  background: rgba(255, 252, 247, 0.95);
+  border: 1px solid rgba(73, 57, 41, 0.08);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-.image {
+.product-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(35, 68, 93, 0.16);
+  box-shadow: 0 20px 40px rgba(37, 26, 17, 0.1);
+}
+
+.media-link {
+  display: block;
+}
+
+.media-shell {
   position: relative;
-  height: 160px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #efe7dc 0%, #e8dfd3 100%);
+}
+
+.cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.image-placeholder {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.2), transparent 42%),
-    linear-gradient(135deg, #b0582e, #245c5a);
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--muted-strong);
 }
 
-.image-letter {
-  font-size: 3.2rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.image-badges {
+.image-placeholder span {
   position: absolute;
+  left: 16px;
+  top: 16px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.image-placeholder strong {
+  font-size: 2.8rem;
+  color: rgba(33, 26, 20, 0.25);
+}
+
+.media-badges {
+  position: absolute;
+  left: 14px;
   right: 14px;
   bottom: 14px;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
-.image-badge {
+.status-pill,
+.soft-pill {
+  display: inline-flex;
+  align-items: center;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-  color: white;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
+  font-weight: 800;
   backdrop-filter: blur(10px);
 }
 
-.muted-badge {
-  background: rgba(255, 255, 255, 0.14);
+.status-pill {
+  background: rgba(255, 253, 249, 0.9);
+  color: var(--text);
 }
 
-.content {
-  padding: 18px;
+.soft-pill {
+  background: rgba(255, 253, 249, 0.72);
+  color: var(--muted-strong);
 }
 
-.summary {
-  min-height: 48px;
+.tone-positive {
+  color: var(--trust);
 }
 
-.actions {
-  display: flex;
-  align-items: center;
+.tone-warning {
+  color: var(--warning);
+}
+
+.tone-danger {
+  color: var(--danger);
+}
+
+.tone-muted {
+  color: var(--muted-strong);
+}
+
+.card-copy {
+  display: grid;
   gap: 10px;
+  padding: 0 4px 4px;
 }
 
 .meta-row {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 14px 0 16px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
-.meta-pill {
-  padding: 6px 10px;
+.meta-dot {
+  width: 4px;
+  height: 4px;
   border-radius: 999px;
-  background: rgba(176, 88, 46, 0.08);
+  background: rgba(73, 57, 41, 0.24);
+}
+
+.title-link h3 {
+  margin: 0;
+  font-size: 1.04rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+}
+
+.summary {
+  margin: 0;
   color: var(--muted);
-  font-size: 0.82rem;
+  line-height: 1.7;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 3.4em;
+}
+
+.footer-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.price-block {
+  display: grid;
+  gap: 4px;
+}
+
+.price-block strong {
+  font-size: 1.18rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.price-block span {
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 </style>
