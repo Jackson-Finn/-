@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Advanced Marketplace
 
 一个基于 `Vue 3 + Vite + Pinia + Element Plus` 和 `FastAPI + SQLAlchemy + Celery` 的高级版二手交易平台骨架，包含搜索、推荐、实时聊天、通知、审核、举报、申诉和权限管理的基础实现。
@@ -120,3 +121,6 @@ docker compose down -v
 7. 用买家账号提交举报，再用卖家账号提交申诉，最后由管理员完成复核。
 8. 回到后台查看统计、推荐重建和搜索重建入口。
 9. 打开 `/admin/platform`，确认平台依赖状态、查看排障手册和最近作业记录。
+=======
+# -
+>>>>>>> df6d64ab930dcbe2716af5403be6ccc59ab23e7a
