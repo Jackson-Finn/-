@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import {
+  ChatDotRound,
   Checked,
   DataAnalysis,
   DocumentChecked,
@@ -13,6 +14,7 @@ import {
   Plus,
   Star,
   Tickets,
+  UploadFilled,
   User,
   Warning
 } from '@element-plus/icons-vue'
@@ -25,6 +27,7 @@ const app = createApp(App)
 const pinia = createPinia()
 
 const iconRegistry = {
+  ChatDotRound,
   Checked,
   DataAnalysis,
   DocumentChecked,
@@ -37,6 +40,7 @@ const iconRegistry = {
   Plus,
   Star,
   Tickets,
+  UploadFilled,
   User,
   Warning
 }

@@ -95,7 +95,7 @@
             <strong>AI 沟通助手</strong>
             <el-tag size="small" effect="plain">{{ copilot.source_mode === 'provider' ? '模型建议' : '规则建议' }}</el-tag>
           </div>
-          <p class="copilot-summary">{{ copilot.summary || '正在整理当前会话摘要。' }}</p>
+          <p class="copilot-summary">{{ copilotLoading ? '正在整理当前会话摘要。' : (copilot.summary || '当前还没有可用建议。') }}</p>
           <div class="copilot-grid">
             <div class="copilot-card">
               <strong>待确认事项</strong>
@@ -173,6 +173,7 @@ const error = ref('')
 const sending = ref(false)
 const draft = ref('')
 const copilot = ref({})
+const copilotLoading = ref(false)
 
 const requestedSessionId = computed(() => {
   const raw = Array.isArray(route.query.sessionId) ? route.query.sessionId[0] : route.query.sessionId
@@ -181,6 +182,37 @@ const requestedSessionId = computed(() => {
 })
 
 const currentSession = computed(() => sessions.value.find((item) => item.id === activeSessionId.value) || null)
+
+function fallbackCopilot() {
+  const joined = messages.value.map((item) => item.content).join(' ').trim()
+  const pendingTopics = []
+  if (!joined.includes('验货')) pendingTopics.push('验货方式')
+  if (!joined.includes('邮寄') && !joined.includes('面交') && !joined.includes('自提')) pendingTopics.push('交付方式')
+  if (!joined.includes('配件')) pendingTopics.push('配件完整度')
+  if (!joined.includes('价格') && !joined.includes('小刀')) pendingTopics.push('价格空间')
+
+  return {
+    summary: joined || '当前会话还没有有效聊天内容，建议先说明你最关心的成色、配件和交付方式。',
+    pending_topics: pendingTopics,
+    suggested_replies: [
+      '能补几张细节图吗？我想先确认成色和瑕疵位置。',
+      '默认是面交、邮寄还是自提？支持先验货再下单吗？',
+      '配件是否齐全，是否有原包装或购买凭证？'
+    ],
+    source_mode: 'rules'
+  }
+}
+
+async function loadCopilot(sessionId) {
+  copilotLoading.value = true
+  try {
+    copilot.value = await interactionApi.chatCopilot({ session_id: sessionId })
+  } catch {
+    copilot.value = fallbackCopilot()
+  } finally {
+    copilotLoading.value = false
+  }
+}
 
 async function loadSessions() {
   loading.value = true
@@ -203,16 +235,12 @@ async function loadSessions() {
 async function selectSession(sessionId) {
   activeSessionId.value = sessionId
   try {
-    const [sessionMessages, sessionCopilot] = await Promise.all([
-      interactionApi.listMessages(sessionId),
-      interactionApi.chatCopilot({ session_id: sessionId })
-    ])
-    messages.value = sessionMessages
-    copilot.value = sessionCopilot
+    messages.value = await interactionApi.listMessages(sessionId)
+    await loadCopilot(sessionId)
   } catch (requestError) {
     ElMessage.error(requestError.message)
     messages.value = []
-    copilot.value = {}
+    copilot.value = fallbackCopilot()
   }
 }
 
@@ -224,7 +252,7 @@ async function sendDraft() {
     const message = await interactionApi.sendMessage(activeSessionId.value, { content })
     messages.value = [...messages.value, message]
     draft.value = ''
-    await selectSession(activeSessionId.value)
+    await loadCopilot(activeSessionId.value)
     await loadSessions()
   } catch (requestError) {
     ElMessage.error(requestError.message)

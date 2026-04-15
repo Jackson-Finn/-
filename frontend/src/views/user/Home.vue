@@ -17,9 +17,9 @@
             @select="submitSearch"
             @keyup.enter="submitSearch"
           />
-          <el-button type="primary" :loading="searchAssistLoading" @click="submitSearch">搜索</el-button>
+          <el-button type="primary" @click="submitSearch">搜索</el-button>
         </div>
-        <p class="search-brief">{{ searchBrief }}</p>
+        <p class="search-brief">先在商品大厅里逛，再通过搜索快速缩小范围，会更接近常见二手交易平台的使用习惯。</p>
         <div class="hero-links">
           <RouterLink class="hero-link" to="/messages">去看消息</RouterLink>
           <RouterLink class="hero-link" to="/orders">处理订单</RouterLink>
@@ -35,6 +35,33 @@
       show-icon
       :closable="false"
     />
+
+    <DataStateCard
+      :state="catalogState"
+      title="商品大厅加载失败"
+      description="暂时无法获取商品大厅内容。"
+      empty-title="商品大厅还没有内容"
+      empty-description="当前还没有公开可浏览的商品，稍后再来看看。"
+      :error-description="catalogError"
+      @retry="loadCatalog"
+    >
+      <section class="panel section-panel">
+        <div class="section-header">
+          <div>
+            <div class="eyebrow">Marketplace</div>
+            <h3 class="section-title">商品大厅</h3>
+            <p class="section-meta">先看公开在售商品，再决定要不要收藏、联系卖家或继续搜索。</p>
+          </div>
+          <RouterLink to="/search">
+            <el-button plain>进入搜索页</el-button>
+          </RouterLink>
+        </div>
+
+        <div class="catalog-grid">
+          <ProductCard v-for="item in hallProducts" :key="item.id" :product="item" />
+        </div>
+      </section>
+    </DataStateCard>
 
     <DataStateCard
       :state="recommendationState"
@@ -169,7 +196,7 @@ import { useRouter } from 'vue-router'
 
 import DataStateCard from '../../components/DataStateCard.vue'
 import ProductCard from '../../components/ProductCard.vue'
-import { authApi } from '../../api/auth'
+import { interactionApi } from '../../api/interaction'
 import { productApi } from '../../api/products'
 import { tradeApi } from '../../api/trade'
 import { useUiStore } from '../../stores/ui'
@@ -187,13 +214,14 @@ const workspace = ref({
   recent_history: 0,
   active_orders: 0
 })
+const hallProducts = ref([])
 const recommendations = ref([])
 const history = ref([])
+const catalogLoading = ref(false)
+const catalogError = ref('')
 const recommendationLoading = ref(false)
 const recommendationError = ref('')
 const pageError = ref('')
-const searchBrief = ref('支持直接输入预算、类目和成色，系统会尽量整理成可执行搜索条件。')
-const searchAssistLoading = ref(false)
 
 async function loadRecommendations() {
   recommendationLoading.value = true
@@ -210,6 +238,21 @@ async function loadRecommendations() {
   }
 }
 
+async function loadCatalog() {
+  catalogLoading.value = true
+  catalogError.value = ''
+  try {
+    const data = await productApi.list()
+    hallProducts.value = (data || []).slice(0, 6)
+  } catch (error) {
+    catalogError.value = error.message
+    hallProducts.value = []
+    throw error
+  } finally {
+    catalogLoading.value = false
+  }
+}
+
 async function loadWorkspace() {
   if (!userStore.isAuthenticated) {
     workspace.value = {
@@ -222,17 +265,34 @@ async function loadWorkspace() {
     history.value = []
     return
   }
-  const [workspaceSummary, recentHistory] = await Promise.all([
-    authApi.workspace(),
-    tradeApi.recentHistory()
+
+  const [sessionsResult, notificationsResult, favoritesResult, recentHistoryResult, ordersResult] = await Promise.allSettled([
+    interactionApi.listSessions(),
+    interactionApi.listNotifications(),
+    tradeApi.listFavorites(),
+    tradeApi.recentHistory(),
+    tradeApi.listOrders()
   ])
-  workspace.value = workspaceSummary
-  history.value = recentHistory || []
+
+  const sessions = sessionsResult.status === 'fulfilled' ? sessionsResult.value : []
+  const notifications = notificationsResult.status === 'fulfilled' ? notificationsResult.value : []
+  const favorites = favoritesResult.status === 'fulfilled' ? favoritesResult.value : []
+  const recentHistory = recentHistoryResult.status === 'fulfilled' ? recentHistoryResult.value : []
+  const orders = ordersResult.status === 'fulfilled' ? ordersResult.value : []
+
+  workspace.value = {
+    unread_messages: sessions.reduce((total, item) => total + Number(item.unread_count || 0), 0),
+    unread_notifications: notifications.filter((item) => !item.read).length,
+    favorites: favorites.length,
+    recent_history: recentHistory.length,
+    active_orders: orders.filter((item) => !['COMPLETED', 'CANCELLED'].includes(item.status)).length
+  }
+  history.value = recentHistory
 }
 
 async function loadPage() {
   pageError.value = ''
-  const results = await Promise.allSettled([loadRecommendations(), loadWorkspace()])
+  const results = await Promise.allSettled([loadCatalog(), loadRecommendations(), loadWorkspace()])
   const failed = results.filter((item) => item.status === 'rejected').map((item) => item.reason?.message).filter(Boolean)
   pageError.value = failed.join('；')
 }
@@ -246,26 +306,23 @@ async function querySuggestions(queryString, cb) {
   }
 }
 
-async function submitSearch() {
+function submitSearch() {
   const raw = keyword.value.trim()
   if (!raw) {
     router.push({ name: 'search' })
     return
   }
-  searchAssistLoading.value = true
-  try {
-    const assist = await productApi.aiSearchAssist({ query: raw })
-    searchBrief.value = assist.search_brief || searchBrief.value
-    const filters = Object.fromEntries(
-      Object.entries(assist.structured_filters || {}).filter(([, value]) => value !== null && value !== undefined && value !== '')
-    )
-    router.push({ name: 'search', query: filters })
-  } finally {
-    searchAssistLoading.value = false
-  }
+  router.push({ name: 'search', query: { keyword: raw } })
 }
 
 onMounted(loadPage)
+
+const catalogState = computed(() => {
+  if (catalogLoading.value) return 'loading'
+  if (catalogError.value) return 'error'
+  if (!hallProducts.value.length) return 'empty'
+  return 'ready'
+})
 
 const recommendationState = computed(() => {
   if (recommendationLoading.value) return 'loading'

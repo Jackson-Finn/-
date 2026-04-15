@@ -68,8 +68,8 @@ import { ElMessage } from 'element-plus'
 
 import NotificationCenter from '../../components/NotificationCenter.vue'
 import StatPanel from '../../components/StatPanel.vue'
-import { authApi } from '../../api/auth'
 import { interactionApi } from '../../api/interaction'
+import { tradeApi } from '../../api/trade'
 import { useUserStore } from '../../stores/user'
 import { useUiStore } from '../../stores/ui'
 
@@ -90,12 +90,21 @@ async function loadNotifications() {
   loading.value = true
   error.value = ''
   try {
-    const [notificationList, workspaceSummary] = await Promise.all([
+    const [notificationList, sessions, favorites, recentHistory, orders] = await Promise.all([
       interactionApi.listNotifications(),
-      authApi.workspace()
+      interactionApi.listSessions(),
+      tradeApi.listFavorites(),
+      tradeApi.recentHistory(),
+      tradeApi.listOrders()
     ])
     notifications.value = notificationList
-    workspace.value = workspaceSummary
+    workspace.value = {
+      unread_messages: sessions.reduce((total, item) => total + Number(item.unread_count || 0), 0),
+      unread_notifications: notificationList.filter((item) => !item.read).length,
+      favorites: favorites.length,
+      recent_history: recentHistory.length,
+      active_orders: orders.filter((item) => !['COMPLETED', 'CANCELLED'].includes(item.status)).length
+    }
   } catch (err) {
     error.value = err.message
     notifications.value = []
