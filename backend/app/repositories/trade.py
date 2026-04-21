@@ -28,6 +28,9 @@ class TradeRepository:
     def get_order(self, order_id: int) -> Order | None:
         return self.db.get(Order, order_id)
 
+    def get_order_items(self, order_id: int) -> list[OrderItem]:
+        return self.db.query(OrderItem).filter_by(order_id=order_id).all()
+
     def create_review(self, review: Review) -> Review:
         self.db.add(review)
         self.db.flush()

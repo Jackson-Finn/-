@@ -73,6 +73,13 @@ class TradeService:
         if order.buyer_id != user_id or order.status != OrderStatus.CREATED.value:
             raise AppError("Order cannot be cancelled", status_code=400)
         order.status = OrderStatus.CANCELLED.value
+
+        order_items = self.repo.get_order_items(order_id)
+        for item in order_items:
+            product = self.catalog_repo.get_product(item.product_id)
+            if product:
+                product.stock += item.quantity
+
         self.publisher.publish(
             DomainEvent(
                 event_type="OrderCancelled",
