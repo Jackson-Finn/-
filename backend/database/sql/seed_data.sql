@@ -72,7 +72,7 @@ INSERT INTO audit_tasks (id, task_type, entity_type, entity_id, status, payload,
   (2, 'APPEAL_REVIEW', 'APPEAL', 1, 'PENDING', '{"reason":"已补充手柄细节图与近景说明，申请复核。"}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 INSERT INTO reports (id, reporter_id, target_type, target_id, reason, status, decision, created_at, updated_at) VALUES
-  (1, 3, 'PRODUCT', 1, '卖家已补充细节图前，我对手柄磨损位置描述还有疑问，想请平台复核记录。', 'PROCESSED', '已提醒卖家补充细节图并保留治理记录。', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+  (1, 3, 'PRODUCT', 1, '卖家已补充细节图前，我对手柄磨损位置描述还有疑问，想请平台复核记录。', 'PENDING', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 INSERT INTO appeals (id, report_id, applicant_id, reason, status, decision, created_at, updated_at) VALUES
   (1, 1, 2, '已补充手柄细节图与近景说明，申请复核。', 'PENDING', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

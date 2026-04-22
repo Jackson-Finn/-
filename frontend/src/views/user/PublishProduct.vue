@@ -325,8 +325,11 @@ const currentStep = computed(() => {
   if (!isBaseInfoReady.value) return 'content'
   if (!isAiReady.value && !loadedProduct.value) return 'assist'
   if (!hasAnyMedia.value) return 'media'
-  return 'submit'
+  if (hasOnlyCover.value) return 'submit'
+  return 'media'
 })
+
+const hasOnlyCover = computed(() => displayAssets.value.length === 1 && coverAssetKey.value)
 
 const pageTitle = computed(() => {
   if (isResubmitMode.value) return '修改后重新提交'

@@ -12,7 +12,13 @@
       <el-table :data="appeals" @row-click="openContext" highlight-current-row>
         <el-table-column prop="id" label="申诉 ID" width="90" />
         <el-table-column prop="report_id" label="原举报" width="90" />
-        <el-table-column prop="status" label="状态" width="120" />
+        <el-table-column prop="status" label="状态" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.status === 'APPROVED'" type="success" effect="light">已支持</el-tag>
+            <el-tag v-else-if="row.status === 'REJECTED'" type="danger" effect="light">已驳回</el-tag>
+            <el-tag v-else type="warning" effect="light">待复核</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="reason" label="申诉原因" min-width="220" show-overflow-tooltip />
         <el-table-column label="操作" width="160">
           <template #default="{ row }">
@@ -35,7 +41,11 @@
       <template v-else>
         <el-descriptions :column="1" border>
           <el-descriptions-item label="申诉 ID">{{ selectedAppeal.id }}</el-descriptions-item>
-          <el-descriptions-item label="状态">{{ selectedAppeal.status }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag v-if="selectedAppeal.status === 'APPROVED'" type="success" effect="light">已支持</el-tag>
+            <el-tag v-else-if="selectedAppeal.status === 'REJECTED'" type="danger" effect="light">已驳回</el-tag>
+            <el-tag v-else type="warning" effect="light">待复核</el-tag>
+          </el-descriptions-item>
           <el-descriptions-item label="申诉人">{{ selectedAppeal.applicant_id }}</el-descriptions-item>
           <el-descriptions-item label="申诉原因">{{ selectedAppeal.reason }}</el-descriptions-item>
           <el-descriptions-item label="复核结论">{{ selectedAppeal.decision || '尚未复核' }}</el-descriptions-item>
@@ -51,15 +61,18 @@
           <el-descriptions-item label="处理备注">{{ context.report.decision || '暂无' }}</el-descriptions-item>
         </el-descriptions>
 
-        <el-form label-position="top" style="margin-top: 16px;">
-          <el-form-item label="复核备注">
-            <el-input v-model="decisionNote" type="textarea" :rows="4" placeholder="记录复核依据，便于答辩展示和追踪" />
-          </el-form-item>
-          <el-space wrap>
-            <el-button type="primary" :disabled="selectedAppeal.status !== 'PENDING'" @click="review(true)">支持申诉</el-button>
-            <el-button :disabled="selectedAppeal.status !== 'PENDING'" @click="review(false)">维持原处理</el-button>
-          </el-space>
-        </el-form>
+        <template v-if="selectedAppeal.status === 'PENDING'">
+          <el-form label-position="top" style="margin-top: 16px;">
+            <el-form-item label="复核备注">
+              <el-input v-model="decisionNote" type="textarea" :rows="4" placeholder="记录复核依据，便于答辩展示和追踪" />
+            </el-form-item>
+            <el-space wrap>
+              <el-button type="primary" @click="review(true)">支持申诉</el-button>
+              <el-button @click="review(false)">维持原处理</el-button>
+            </el-space>
+          </el-form>
+        </template>
+        <el-result v-else icon="success" :title="selectedAppeal.status === 'APPROVED' ? '已支持申诉' : '已维持原处理'" :sub-title="selectedAppeal.decision ? `复核备注：${selectedAppeal.decision}` : ''" style="margin-top: 16px;" />
 
         <el-divider />
 
@@ -115,7 +128,11 @@ async function loadAppeals() {
 async function openContext(row) {
   selectedAppeal.value = row
   decisionNote.value = row.decision || ''
-  context.value = await adminApi.appealContext(row.id)
+  const ctx = await adminApi.appealContext(row.id)
+  context.value = ctx
+  if (ctx.appeal) {
+    selectedAppeal.value = { ...row, status: ctx.appeal.status, decision: ctx.appeal.decision }
+  }
 }
 
 async function review(approved) {

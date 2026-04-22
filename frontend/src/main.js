@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import {
+  Bell,
   ChatDotRound,
   Checked,
   DataAnalysis,
@@ -12,6 +13,7 @@ import {
   MagicStick,
   Monitor,
   Plus,
+  Setting,
   Star,
   Tickets,
   UploadFilled,
@@ -27,6 +29,7 @@ const app = createApp(App)
 const pinia = createPinia()
 
 const iconRegistry = {
+  Bell,
   ChatDotRound,
   Checked,
   DataAnalysis,
@@ -38,6 +41,7 @@ const iconRegistry = {
   MagicStick,
   Monitor,
   Plus,
+  Setting,
   Star,
   Tickets,
   UploadFilled,

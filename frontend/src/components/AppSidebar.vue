@@ -1,7 +1,9 @@
 <template>
   <div class="sidebar panel">
     <div class="brand">
-      <div class="brand-badge">AM</div>
+      <div class="brand-logo">
+        <img src="/logo.jpg" alt="闲置市场" />
+      </div>
       <div class="brand-copy">
         <div class="eyebrow">Marketplace</div>
         <strong>{{ title }}</strong>
@@ -91,16 +93,18 @@ function isItemActive(item) {
   line-height: 1.45;
 }
 
-.brand-badge {
+.brand-logo {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  background: linear-gradient(180deg, #2458de 0%, #183b9b 100%);
-  color: white;
+  overflow: hidden;
   box-shadow: 0 14px 24px rgba(37, 86, 216, 0.2);
+}
+
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .brand strong {

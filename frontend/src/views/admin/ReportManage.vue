@@ -12,7 +12,12 @@
       <el-table :data="reports" @row-click="openContext" highlight-current-row>
         <el-table-column prop="id" label="举报 ID" width="90" />
         <el-table-column prop="target_type" label="目标类型" width="110" />
-        <el-table-column prop="status" label="状态" width="120" />
+        <el-table-column prop="status" label="状态" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.status === 'PROCESSED'" type="success" effect="light">已处理</el-tag>
+            <el-tag v-else type="warning" effect="light">待处理</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="reason" label="举报原因" min-width="220" show-overflow-tooltip />
         <el-table-column label="操作" width="160">
           <template #default="{ row }">
@@ -35,22 +40,28 @@
       <template v-else>
         <el-descriptions :column="1" border>
           <el-descriptions-item label="举报 ID">{{ selectedReport.id }}</el-descriptions-item>
-          <el-descriptions-item label="状态">{{ selectedReport.status }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag v-if="selectedReport.status === 'PROCESSED'" type="success" effect="light">已处理</el-tag>
+            <el-tag v-else type="warning" effect="light">待处理</el-tag>
+          </el-descriptions-item>
           <el-descriptions-item label="举报人">{{ selectedReport.reporter_id }}</el-descriptions-item>
           <el-descriptions-item label="目标">{{ selectedReport.target_type }} / {{ selectedReport.target_id }}</el-descriptions-item>
           <el-descriptions-item label="举报原因">{{ selectedReport.reason }}</el-descriptions-item>
           <el-descriptions-item label="处理备注">{{ selectedReport.decision || '尚未处理' }}</el-descriptions-item>
         </el-descriptions>
 
-        <el-form label-position="top" style="margin-top: 16px;">
-          <el-form-item label="处理备注">
-            <el-input v-model="decisionNote" type="textarea" :rows="4" placeholder="记录处理依据，便于复核与展示" />
-          </el-form-item>
-          <el-space wrap>
-            <el-button type="primary" :disabled="selectedReport.status === 'PROCESSED'" @click="process(true)">确认处理</el-button>
-            <el-button :disabled="selectedReport.status === 'PROCESSED'" @click="process(false)">判定无效</el-button>
-          </el-space>
-        </el-form>
+        <template v-if="selectedReport.status !== 'PROCESSED'">
+          <el-form label-position="top" style="margin-top: 16px;">
+            <el-form-item label="处理备注">
+              <el-input v-model="decisionNote" type="textarea" :rows="4" placeholder="记录处理依据，便于复核与展示" />
+            </el-form-item>
+            <el-space wrap>
+              <el-button type="primary" @click="process(true)">确认处理</el-button>
+              <el-button @click="process(false)">判定无效</el-button>
+            </el-space>
+          </el-form>
+        </template>
+        <el-result v-else icon="success" title="已处理完成" :sub-title="selectedReport.decision ? `处理备注：${selectedReport.decision}` : ''" style="margin-top: 16px;" />
 
         <el-divider />
 
@@ -119,7 +130,11 @@ async function loadReports() {
 async function openContext(row) {
   selectedReport.value = row
   decisionNote.value = row.decision || ''
-  context.value = await adminApi.reportContext(row.id)
+  const ctx = await adminApi.reportContext(row.id)
+  context.value = ctx
+  if (ctx.report) {
+    selectedReport.value = { ...row, status: ctx.report.status, decision: ctx.report.decision }
+  }
 }
 
 async function process(approved) {

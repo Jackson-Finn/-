@@ -3,8 +3,8 @@
     <section class="panel search-hero">
       <div class="hero-copy">
         <div class="eyebrow">Discover</div>
-        <h2 class="hero-title">更少按钮，更完整的交易路径。</h2>
-        <p class="section-meta">从搜索开始，快速进入商品、卖家沟通和订单履约，不再把关键动作散落在各个页面里。</p>
+        <h2 class="hero-title">发现宝贝，聊好价格，轻松交易。</h2>
+        <p class="section-meta">从搜索到下单，完整交易路径一目了然，随时了解商品动态。</p>
       </div>
 
       <div class="hero-panel">
@@ -19,7 +19,7 @@
           />
           <el-button type="primary" @click="submitSearch">搜索</el-button>
         </div>
-        <p class="search-brief">先在商品大厅里逛，再通过搜索快速缩小范围，会更接近常见二手交易平台的使用习惯。</p>
+        <p class="search-brief">在商品大厅里逛逛，或直接搜索缩小范围。</p>
         <div class="hero-links">
           <RouterLink class="hero-link" to="/messages">去看消息</RouterLink>
           <RouterLink class="hero-link" to="/orders">处理订单</RouterLink>
@@ -50,7 +50,7 @@
           <div>
             <div class="eyebrow">Marketplace</div>
             <h3 class="section-title">商品大厅</h3>
-            <p class="section-meta">先看公开在售商品，再决定要不要收藏、联系卖家或继续搜索。</p>
+            <p class="section-meta">公开在售的好物，看看有没有你想要的。</p>
           </div>
           <RouterLink to="/search">
             <el-button plain>进入搜索页</el-button>
@@ -78,7 +78,7 @@
           <div>
             <div class="eyebrow">Recommendations</div>
             <h3 class="section-title">推荐流</h3>
-            <p class="section-meta">理由会直接展示出来，帮助你更快判断为什么值得看。</p>
+            <p class="section-meta">根据你的偏好精选，帮你更快找到心仪好物。</p>
           </div>
           <el-button plain @click="loadRecommendations">刷新推荐</el-button>
         </div>
@@ -122,7 +122,7 @@
         <div>
           <div class="eyebrow">Signals</div>
           <h3 class="section-title">最近交易信号</h3>
-          <p class="section-meta">把消息、通知、收藏和最近浏览收在一处，减少反复找入口。</p>
+          <p class="section-meta">消息、订单、收藏和浏览记录统一汇总，随时把握交易进度。</p>
         </div>
       </div>
 
@@ -130,22 +130,22 @@
         <RouterLink to="/messages" class="signal-card">
           <strong>{{ workspace.unread_messages }}</strong>
           <span>未读消息</span>
-          <p>直接进入会话，继续处理正在沟通的商品。</p>
+          <p>随时查看正在沟通中的商品消息。</p>
         </RouterLink>
         <RouterLink to="/orders" class="signal-card">
           <strong>{{ workspace.active_orders }}</strong>
           <span>进行中订单</span>
-          <p>确认收货、补评价和查看履约进度都从这里处理。</p>
+          <p>查看进行中订单的进度和详情。</p>
         </RouterLink>
         <RouterLink to="/favorites" class="signal-card">
           <strong>{{ workspace.favorites }}</strong>
           <span>收藏夹</span>
-          <p>回到候选商品继续比较，不必重新搜索。</p>
+          <p>从收藏夹快速回到候选商品，继续比较。</p>
         </RouterLink>
         <RouterLink to="/history" class="signal-card">
           <strong>{{ workspace.recent_history }}</strong>
           <span>最近浏览</span>
-          <p>把最近看过的商品线索重新收回来。</p>
+          <p>快速回到最近浏览过的商品。</p>
         </RouterLink>
       </div>
 

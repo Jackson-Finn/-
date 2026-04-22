@@ -8,7 +8,7 @@
         <div class="topbar-copy">
           <div class="eyebrow">Marketplace</div>
           <h1>二手交易</h1>
-          <p class="topbar-meta">围绕发现、沟通、下单与履约组织页面，把复杂功能收进更清晰的流转里。</p>
+          <p class="topbar-meta">找好物、聊细节、放心买，轻松完成每一笔二手交易。</p>
         </div>
         <div class="actions">
           <el-popover v-if="userStore.isAuthenticated" placement="bottom-end" :width="460" trigger="click">
