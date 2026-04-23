@@ -15,8 +15,6 @@
         <RouterLink to="/my-products">
           <el-button plain>我的商品</el-button>
         </RouterLink>
-        <el-button :loading="aiLoading" @click="generateByAi">生成建议</el-button>
-        <el-button plain :loading="moderationLoading" :disabled="!canRunModeration" @click="runModeration">检查内容</el-button>
         <el-button type="primary" :loading="submitting" :disabled="submitDisabled" @click="submitProduct">
           {{ submitButtonLabel }}
         </el-button>
@@ -44,18 +42,72 @@
           </div>
 
           <div class="editor-canvas">
-            <div class="title-editor">
-              <label>标题</label>
-              <input v-model="form.title" type="text" placeholder="例如：MacBook Air M2 95新，箱说齐全">
-            </div>
+            <div class="content-row">
+              <div class="content-fields">
+                <div class="title-editor">
+                  <label>标题</label>
+                  <input v-model="form.title" type="text" placeholder="例如：MacBook Air M2 95新，箱说齐全">
+                </div>
 
-            <div class="description-editor">
-              <label>描述</label>
-              <textarea
-                v-model="form.description"
-                rows="8"
-                placeholder="补充成色、配件、使用情况、交易方式和验机说明。"
-              />
+                <div class="description-editor">
+                  <label>描述</label>
+                  <textarea
+                    v-model="form.description"
+                    rows="8"
+                    placeholder="补充成色、配件、使用情况、交易方式和验机说明。"
+                  />
+                </div>
+              </div>
+
+              <div class="ai-assist-panel-wrap">
+                <div class="ai-assist-panel">
+                  <div class="ai-panel-header">
+                    <div class="eyebrow">AI Assist</div>
+                    <div class="ai-panel-actions">
+                      <el-button size="small" :loading="aiLoading" @click="generateByAi">生成草稿</el-button>
+                      <el-button size="small" plain :loading="moderationLoading" :disabled="!canRunModeration" @click="runModeration">
+                        {{ moderation.risk_level ? '重新检查' : '检查内容' }}
+                      </el-button>
+                    </div>
+                  </div>
+
+                  <div v-if="aiResult.title || aiResult.description" class="ai-suggestion">
+                    <div class="ai-suggestion-section">
+                      <div class="ai-label">建议标题</div>
+                      <div class="ai-card suggestion-title-card">{{ aiResult.title || '—' }}</div>
+                    </div>
+                    <div class="ai-suggestion-section">
+                      <div class="ai-label">文案草稿</div>
+                      <div class="ai-card">{{ aiResult.description || '—' }}</div>
+                    </div>
+                    <div v-if="aiMeta" class="ai-source-badge" :class="{ 'is-fallback': !aiMeta.realAi }">
+                      <span v-if="aiMeta.realAi">AI 生成</span>
+                      <span v-else>规则生成</span>
+                      <span class="ai-source-detail">{{ aiMeta.mode }} · {{ (aiMeta.confidence * 100).toFixed(0) }}%</span>
+                    </div>
+                  </div>
+                  <div v-else class="ai-empty-state">
+                    <p>输入卖点标签后，点击「生成草稿」，AI 会根据关键词、类目给出标题和描述建议。</p>
+                    <p>确认内容无误后，再点击「检查内容」做风险评估。</p>
+                  </div>
+
+                  <div v-if="moderation.risk_level" class="risk-strip" :class="{ 'has-risk': moderation.risk_level !== 'LOW' }">
+                    <div class="risk-info">
+                      <strong>风险等级</strong>
+                      <p>{{ moderation.reason || '已完成内容检查' }}</p>
+                      <div v-if="moderationMeta" class="risk-source-badge" :class="{ 'is-fallback': !moderationMeta.realAi }">
+                        <span v-if="moderationMeta.realAi">AI 检查</span>
+                        <span v-else>规则检查</span>
+                        <span class="ai-source-detail">{{ moderationMeta.mode }} · {{ (moderationMeta.confidence * 100).toFixed(0) }}%</span>
+                      </div>
+                    </div>
+                    <span class="risk-level">{{ moderation.risk_level }}</span>
+                  </div>
+                  <div v-else class="risk-strip-empty">
+                    <span>点击「检查内容」进行风险评估</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="field-grid">
@@ -111,15 +163,15 @@
                 <el-button @click="addSellingPoint">添加</el-button>
               </div>
               <div class="tag-list">
-                <button
+                <span
                   v-for="item in sellingPoints"
                   :key="item"
-                  type="button"
                   class="tag-chip"
                   @click="removeSellingPoint(item)"
                 >
                   {{ item }}
-                </button>
+                  <span class="tag-chip-remove" aria-hidden="true">×</span>
+                </span>
               </div>
             </div>
           </div>
@@ -189,14 +241,6 @@
           :category-label="activeCategoryLabel"
           :asset-count="displayAssets.length"
         />
-
-        <PublishSuggestionPanel
-          :ai-result="aiResult"
-          :moderation="moderation"
-          :can-moderate="canRunModeration"
-          @generate="generateByAi"
-          @moderate="runModeration"
-        />
       </aside>
     </div>
   </div>
@@ -210,7 +254,6 @@ import { ElMessage } from 'element-plus'
 import PublishAssetItem from '../../components/publish/PublishAssetItem.vue'
 import PublishPreviewCard from '../../components/publish/PublishPreviewCard.vue'
 import PublishStageRail from '../../components/publish/PublishStageRail.vue'
-import PublishSuggestionPanel from '../../components/publish/PublishSuggestionPanel.vue'
 import { productApi } from '../../api/products'
 
 const categoryOptions = [
@@ -303,6 +346,21 @@ const previewCoverImage = computed(() => {
 const isBaseInfoReady = computed(() => Boolean(form.title.trim() && form.description.trim() && form.price >= 0))
 const hasAnyMedia = computed(() => displayAssets.value.length > 0)
 const isAiReady = computed(() => Boolean(aiResult.value?.title || aiResult.value?.description))
+const aiMeta = computed(() => {
+  if (!aiResult.value?.confidence) return null
+  const mode = aiResult.value.source_mode || aiResult.value.provider || 'unknown'
+  const confidence = aiResult.value.confidence
+  const degraded = aiResult.value.degraded
+  return { mode, confidence, degraded, realAi: confidence >= 0.8 }
+})
+
+const moderationMeta = computed(() => {
+  if (!moderation.value?.confidence) return null
+  const mode = moderation.value.source_mode || moderation.value.provider || 'unknown'
+  const confidence = moderation.value.confidence
+  const degraded = moderation.value.degraded
+  return { mode, confidence, degraded, realAi: confidence >= 0.8 }
+})
 const isReadyToSubmit = computed(() => isBaseInfoReady.value && hasAnyMedia.value)
 
 const workflowSteps = [
@@ -546,12 +604,13 @@ async function submitProduct() {
 async function generateByAi() {
   aiLoading.value = true
   try {
-    aiResult.value = await productApi.aiDraft({
+    const rawResult = await productApi.aiDraft({
       keywords: sellingPoints.value.length ? sellingPoints.value : ['二手', '高性价比', '保养好'],
       category: activeCategoryLabel.value || '数码'
     })
-    form.title = aiResult.value.title || form.title
-    form.description = aiResult.value.description || form.description
+    aiResult.value = { ...rawResult }
+    form.title = rawResult.title || form.title
+    form.description = rawResult.description || form.description
     ElMessage.success('已生成建议草稿')
   } catch (error) {
     ElMessage.error(error.message)
@@ -699,6 +758,187 @@ async function uploadSelectedFiles() {
   gap: 18px;
 }
 
+.content-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.content-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.ai-assist-panel-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-assist-panel {
+  flex: 1;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #f8fbff;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.ai-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ai-panel-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ai-empty-state {
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--line);
+  background: white;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.ai-empty-state p {
+  margin: 0;
+}
+
+.ai-empty-state p + p {
+  margin-top: 6px;
+}
+
+.ai-suggestion {
+  display: grid;
+  gap: 12px;
+}
+
+.ai-suggestion-section {
+  display: grid;
+  gap: 6px;
+}
+
+.ai-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ai-card {
+  min-height: 54px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: white;
+  line-height: 1.65;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.suggestion-title-card {
+  font-weight: 700;
+  font-size: 0.96rem;
+}
+
+.ai-source-badge,
+.risk-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.risk-source-badge {
+  margin-top: 4px;
+}
+
+.ai-source-badge.is-fallback,
+.risk-source-badge.is-fallback {
+  background: rgba(234, 179, 8, 0.1);
+  color: #a16207;
+  border-color: rgba(234, 179, 8, 0.25);
+}
+
+.ai-source-detail {
+  font-weight: 400;
+  opacity: 0.7;
+  font-size: 0.65rem;
+}
+
+.risk-strip-empty {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--line);
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.risk-strip {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.risk-strip.has-risk {
+  background: var(--danger-soft);
+  border-color: rgba(180, 35, 24, 0.15);
+}
+
+.risk-info {
+  display: grid;
+  gap: 3px;
+}
+
+.risk-strip strong {
+  font-size: 0.88rem;
+}
+
+.risk-strip p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.risk-level {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #f4f7fb;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.has-risk .risk-level {
+  background: #b42318;
+  color: white;
+}
+
 .title-editor,
 .description-editor {
   display: grid;
@@ -806,12 +1046,38 @@ async function uploadSelectedFiles() {
 }
 
 .tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 7px 10px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: white;
   color: var(--text);
   cursor: pointer;
+  font-size: 0.88rem;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  user-select: none;
+}
+
+.tag-chip:hover {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #dc2626;
+}
+
+.tag-chip-remove {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.tag-chip:hover .tag-chip-remove {
+  opacity: 1;
 }
 
 .section-header {
@@ -905,6 +1171,12 @@ async function uploadSelectedFiles() {
   }
 
   .publish-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 780px) {
+  .content-row {
     grid-template-columns: 1fr;
   }
 }

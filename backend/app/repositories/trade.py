@@ -117,4 +117,13 @@ class TradeRepository:
         self.db.add(material)
 
     def popular_products(self, limit: int = 10) -> list[Product]:
-        return self.db.query(Product).order_by(Product.created_at.desc()).limit(limit).all()
+        return (
+            self.db.query(Product)
+            .filter(
+                Product.audit_status == AuditStatus.APPROVED.value,
+                Product.product_status == ProductStatus.ACTIVE.value,
+            )
+            .order_by(Product.created_at.desc())
+            .limit(limit)
+            .all()
+        )

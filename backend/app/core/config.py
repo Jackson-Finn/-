@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     ai_provider: str = "mock"
     ai_api_key: str = ""
     ai_base_url: str = ""
+    ai_model: str = "qwen3.5-plus"
     cors_origins: str = "http://localhost:5173,http://localhost"
     seed_admin_email: str = "admin@example.com"
     seed_admin_password: str = "Admin123!"

@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 10000
+  timeout: 60000 // 60秒超时，AI生成需要更长时间
 })
 
 request.interceptors.request.use((config) => {
