@@ -131,14 +131,23 @@
         </el-table>
       </section>
     </DataStateCard>
+
+    <ConfirmDialog
+      v-model="confirmDialog.visible"
+      :title="confirmDialog.title"
+      :description="confirmDialog.description"
+      :loading="confirmDialog.loading"
+      @confirm="confirmDialog.onConfirm"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
+import ConfirmDialog from '../../components/common/ConfirmDialog.vue'
 import DataStateCard from '../../components/DataStateCard.vue'
 import { productApi } from '../../api/products'
 
@@ -151,6 +160,14 @@ const keyword = ref('')
 const statusFilter = ref('ALL')
 const sortBy = ref('updated')
 const activeActionKey = ref('')
+
+const confirmDialog = ref({
+  visible: false,
+  title: '确认下架',
+  description: '',
+  loading: false,
+  onConfirm: null
+})
 
 const pageState = computed(() => {
   if (loading.value && !products.value.length) return 'loading'
@@ -214,27 +231,28 @@ function resubmitFromEditor(productId) {
 }
 
 async function offShelf(product) {
-  try {
-    await ElMessageBox.confirm(`确定要下架“${product.title}”吗？`, '确认下架', {
-      type: 'warning',
-      confirmButtonText: '确认下架',
-      cancelButtonText: '取消'
-    })
-  } catch {
-    return
-  }
-
-  const actionKey = `${product.id}:off-shelf`
-  activeActionKey.value = actionKey
-  try {
-    const updated = await productApi.offShelf(product.id)
-    products.value = products.value.map((item) => (item.id === product.id ? updated : item))
-    ElMessage.success('商品已下架')
-  } catch (requestError) {
-    ElMessage.error(requestError.message)
-  } finally {
-    if (activeActionKey.value === actionKey) {
-      activeActionKey.value = ''
+  confirmDialog.value = {
+    visible: true,
+    title: '确认下架',
+    description: `确定要下架"${product.title}"吗？`,
+    loading: false,
+    onConfirm: async () => {
+      const actionKey = `${product.id}:off-shelf`
+      activeActionKey.value = actionKey
+      confirmDialog.value.loading = true
+      try {
+        const updated = await productApi.offShelf(product.id)
+        products.value = products.value.map((item) => (item.id === product.id ? updated : item))
+        confirmDialog.value.visible = false
+        ElMessage.success('商品已下架')
+      } catch (requestError) {
+        ElMessage.error(requestError.message)
+      } finally {
+        if (activeActionKey.value === actionKey) {
+          activeActionKey.value = ''
+        }
+        confirmDialog.value.loading = false
+      }
     }
   }
 }

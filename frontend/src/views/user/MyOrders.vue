@@ -119,14 +119,23 @@
         <el-button type="primary" :disabled="!canSubmitReview" @click="submitReview">{{ submitLabel }}</el-button>
       </el-form>
     </section>
+
+    <ConfirmDialog
+      v-model="confirmDialog.visible"
+      :title="confirmDialog.title"
+      :description="confirmDialog.description"
+      :loading="confirmDialog.loading"
+      @confirm="confirmDialog.onConfirm"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
+import ConfirmDialog from '../../components/common/ConfirmDialog.vue'
 import DataStateCard from '../../components/DataStateCard.vue'
 import { tradeApi } from '../../api/trade'
 
@@ -145,6 +154,14 @@ const reviewForm = reactive({
   can_review_seller: false
 })
 
+const confirmDialog = ref({
+  visible: false,
+  title: '',
+  description: '',
+  loading: false,
+  onConfirm: null
+})
+
 async function loadOrders() {
   loading.value = true
   error.value = ''
@@ -159,34 +176,46 @@ async function loadOrders() {
 }
 
 async function confirmOrder(id) {
-  await ElMessageBox.confirm('确认收货会将订单标记为完成，是否继续？', '确认收货', {
-    confirmButtonText: '确认',
-    cancelButtonText: '稍后再说',
-    type: 'warning'
-  })
-
-  try {
-    await tradeApi.confirmOrder(id)
-    ElMessage.success('订单已确认完成')
-    await loadOrders()
-  } catch (err) {
-    ElMessage.error(err.message)
+  confirmDialog.value = {
+    visible: true,
+    title: '确认收货',
+    description: '确认收货会将订单标记为完成，是否继续？',
+    loading: false,
+    onConfirm: async () => {
+      confirmDialog.value.loading = true
+      try {
+        await tradeApi.confirmOrder(id)
+        confirmDialog.value.visible = false
+        ElMessage.success('订单已确认完成')
+        await loadOrders()
+      } catch (err) {
+        ElMessage.error(err.message)
+      } finally {
+        confirmDialog.value.loading = false
+      }
+    }
   }
 }
 
 async function cancelOrder(id) {
-  await ElMessageBox.confirm('取消订单后将终止交易流程，确定继续吗？', '取消订单', {
-    confirmButtonText: '取消订单',
-    cancelButtonText: '保留订单',
-    type: 'warning'
-  })
-
-  try {
-    await tradeApi.cancelOrder(id)
-    ElMessage.success('订单已取消')
-    await loadOrders()
-  } catch (err) {
-    ElMessage.error(err.message)
+  confirmDialog.value = {
+    visible: true,
+    title: '取消订单',
+    description: '取消订单后将终止交易流程，确定继续吗？',
+    loading: false,
+    onConfirm: async () => {
+      confirmDialog.value.loading = true
+      try {
+        await tradeApi.cancelOrder(id)
+        confirmDialog.value.visible = false
+        ElMessage.success('订单已取消')
+        await loadOrders()
+      } catch (err) {
+        ElMessage.error(err.message)
+      } finally {
+        confirmDialog.value.loading = false
+      }
+    }
   }
 }
 
