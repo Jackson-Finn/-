@@ -2,9 +2,9 @@
   <div class="page-grid">
     <section class="page-head">
       <div>
-        <div class="eyebrow">Product Management</div>
+        <div class="eyebrow">商品管理</div>
         <h2 class="page-title">商品列表</h2>
-        <p class="page-meta">先筛选，再查看详情，再做审核动作。</p>
+        <p class="page-meta">先筛选，再进入详情，最后执行审核动作。</p>
       </div>
       <el-space wrap>
         <RouterLink to="/admin/audits">

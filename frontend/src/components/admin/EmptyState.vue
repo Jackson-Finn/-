@@ -13,7 +13,7 @@
 defineProps({
   title: {
     type: String,
-    default: 'EMPTY'
+    default: '暂无内容'
   },
   description: {
     type: String,
@@ -24,13 +24,13 @@ defineProps({
 
 <style scoped>
 .state {
-  padding: 18px;
+  padding: 16px;
 }
 
 .empty-mark {
-  color: rgba(15, 23, 42, 0.24);
-  font-size: 0.82rem;
+  color: rgba(19, 23, 28, 0.22);
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.04em;
 }
 </style>

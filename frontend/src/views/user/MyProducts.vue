@@ -2,9 +2,9 @@
   <div class="my-products-page">
     <header class="panel page-header">
       <div>
-        <div class="eyebrow">Seller Workspace</div>
+        <div class="eyebrow">卖家工作区</div>
         <h2>我的商品</h2>
-        <p>统一查看审核状态、继续编辑，并处理打回修改的商品。</p>
+        <p>在同一页查看审核进度、继续编辑，并处理打回修改的商品。</p>
       </div>
       <div class="header-actions">
         <RouterLink to="/publish">
@@ -345,12 +345,16 @@ function formatTime(value) {
   padding: 18px;
   display: grid;
   gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: none;
 }
 
 .metric-label {
   color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .metric-card strong {
@@ -387,10 +391,10 @@ function formatTime(value) {
 .product-thumb {
   width: 72px;
   height: 72px;
-  border-radius: 14px;
+  border-radius: 10px;
   object-fit: cover;
   flex-shrink: 0;
-  background: #eef3fb;
+  background: var(--surface-muted);
 }
 
 .product-thumb.placeholder {

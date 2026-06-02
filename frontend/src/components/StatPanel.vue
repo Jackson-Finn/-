@@ -21,16 +21,16 @@ defineProps({
   display: grid;
   gap: 8px;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.84);
+  border-radius: 12px;
+  background: var(--surface);
 }
 
 .stat-label {
   color: var(--muted);
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 .value {

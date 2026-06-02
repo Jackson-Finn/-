@@ -3,7 +3,7 @@ CONDA_SH := $(HOME)/miniconda3/etc/profile.d/conda.sh
 ENV_NAME := advanced-marketplace
 COMPOSE := docker compose
 
-.PHONY: api frontend test build install-frontend migrate demo docker-pull docker-up docker-down docker-logs docker-ps docker-config docker-smoke docker-reset
+.PHONY: api frontend test build install-frontend migrate demo frontend-e2e docker-pull docker-up docker-down docker-logs docker-ps docker-config docker-smoke docker-reset
 
 api:
 	source "$(CONDA_SH)" && conda activate "$(ENV_NAME)" && cd backend && alembic upgrade head && uvicorn app.main:app --reload
@@ -23,6 +23,9 @@ test:
 build:
 	source "$(CONDA_SH)" && conda activate "$(ENV_NAME)" && cd frontend && npm run build
 
+frontend-e2e:
+	source "$(CONDA_SH)" && conda activate "$(ENV_NAME)" && cd frontend && npm run e2e
+
 demo:
 	@echo "1. cp backend/.env.example backend/.env"
 	@echo "2. make migrate"
@@ -30,6 +33,7 @@ demo:
 	@echo "4. make frontend"
 	@echo "5. Login as admin@example.com / Admin123!"
 	@echo "6. docker compose is available through 'make docker-up' and serves the gateway on http://localhost:8080."
+	@echo "7. run 'make frontend-e2e' after docker-up to verify core buyer/seller/admin flows."
 
 docker-up:
 	$(COMPOSE) up --detach --wait --wait-timeout 300
