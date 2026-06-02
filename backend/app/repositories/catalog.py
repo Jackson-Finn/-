@@ -1,4 +1,4 @@
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 from sqlalchemy.orm import Session
 
 from app.core.enums import AuditStatus, ProductStatus
@@ -93,6 +93,62 @@ class CatalogRepository:
             "newest": Product.created_at.desc(),
         }
         return query.order_by(order_mapping.get(sort, Product.created_at.desc())).all()
+
+    def search_products_from_catalog_view(
+        self,
+        keyword: str | None = None,
+        category: str | None = None,
+        price_min: float | None = None,
+        price_max: float | None = None,
+        sort: str = "newest",
+    ) -> list[dict]:
+        order_mapping = {
+            "price_asc": "price ASC",
+            "price_desc": "price DESC",
+            "updated_desc": "updated_at DESC",
+            "newest": "created_at DESC",
+        }
+        filters = ["display_status = 'ACTIVE'"]
+        params: dict[str, object] = {}
+
+        if keyword:
+            filters.append("(title LIKE :keyword OR description LIKE :keyword OR seller_name LIKE :keyword)")
+            params["keyword"] = f"%{keyword}%"
+        if category:
+            filters.append("category_name LIKE :category")
+            params["category"] = f"%{category}%"
+        if price_min is not None:
+            filters.append("price >= :price_min")
+            params["price_min"] = price_min
+        if price_max is not None:
+            filters.append("price <= :price_max")
+            params["price_max"] = price_max
+
+        statement = text(
+            f"""
+            SELECT
+                id,
+                seller_id,
+                seller_name,
+                category_name,
+                title,
+                description,
+                price,
+                stock,
+                product_status,
+                audit_status,
+                tags,
+                cover_image,
+                hero_summary,
+                condition_label,
+                updated_at,
+                created_at
+            FROM vw_active_product_catalog
+            WHERE {' AND '.join(filters)}
+            ORDER BY {order_mapping.get(sort, 'created_at DESC')}
+            """
+        )
+        return [dict(row) for row in self.db.execute(statement, params).mappings().all()]
 
     def search_suggestions(self, keyword: str | None = None, limit: int = 10) -> list[str]:
         normalized = (keyword or "").strip().lower()

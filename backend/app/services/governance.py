@@ -23,16 +23,6 @@ class GovernanceService:
             reason=payload.reason,
         )
         self.repo.create_report(report)
-        self.repo.create_audit_task(
-            AuditTask(
-                task_type="REPORT_REVIEW",
-                entity_type="REPORT",
-                entity_id=report.id,
-                payload={"reason": payload.reason},
-                status=TaskStatus.PENDING.value,
-            )
-        )
-        self.repo.log_operation(reporter_id, "report.submit", {"report_id": report.id})
         self.publisher.publish(
             DomainEvent(
                 event_type="ReportSubmitted",

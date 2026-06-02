@@ -1,3 +1,6 @@
+from sqlalchemy import text
+
+
 def test_health_endpoint(mysql_client):
     response = mysql_client.get("/health")
     assert response.status_code == 200
@@ -281,3 +284,66 @@ def test_public_seller_profile_and_products(mysql_client):
     listing = products.json()["data"]
     assert listing
     assert all(item["seller_id"] == seller_id for item in listing)
+
+
+def test_database_views_and_functions_are_queryable(mysql_client):
+    from app.core.database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        display_status = db.execute(
+            text("SELECT fn_product_display_status('APPROVED', 'ACTIVE', 1)")
+        ).scalar_one()
+        trust_level = db.execute(
+            text("SELECT fn_seller_trust_level(12, 4.8, 0)")
+        ).scalar_one()
+        active_catalog_count = db.execute(
+            text("SELECT COUNT(*) FROM vw_active_product_catalog")
+        ).scalar_one()
+        seller_summary_count = db.execute(
+            text("SELECT COUNT(*) FROM vw_seller_operational_summary")
+        ).scalar_one()
+        risk_rows = db.execute(
+            text("SELECT pending_reports, pending_appeals, pending_audit_tasks FROM vw_admin_risk_overview")
+        ).mappings().all()
+    finally:
+        db.close()
+
+    assert display_status == "ACTIVE"
+    assert trust_level == "HIGH"
+    assert active_catalog_count >= 1
+    assert seller_summary_count >= 1
+    assert len(risk_rows) == 1
+
+
+def test_report_insert_trigger_creates_governance_artifacts(mysql_client):
+    from app.core.database import SessionLocal
+    from app.models.entities import AuditTask, OperationLog, Report, User
+
+    db = SessionLocal()
+    try:
+        buyer = db.query(User).filter(User.email == "buyer@example.com").one()
+        report = Report(
+            reporter_id=buyer.id,
+            target_type="PRODUCT",
+            target_id=1,
+            reason="trigger managed report entry",
+        )
+        db.add(report)
+        db.flush()
+
+        tasks = (
+            db.query(AuditTask)
+            .filter(AuditTask.entity_type == "REPORT", AuditTask.entity_id == report.id)
+            .all()
+        )
+        logs = [
+            item for item in db.query(OperationLog).order_by(OperationLog.id.asc()).all()
+            if item.action == "report.submit" and item.details.get("report_id") == report.id
+        ]
+    finally:
+        db.rollback()
+        db.close()
+
+    assert len(tasks) == 1
+    assert len(logs) == 1

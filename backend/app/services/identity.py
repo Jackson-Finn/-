@@ -50,12 +50,14 @@ class IdentityService:
         user = self.repo.get_user_by_id(user_id)
         if not user:
             raise AppError("Seller not found", status_code=404)
-        metrics = self.repo.seller_metrics(user_id)
+        metrics = self.repo.seller_metrics_from_view(user_id) or self.repo.seller_metrics(user_id)
         persona = self._seller_persona(user.id, user.display_name)
         response_time = persona["response_time_minutes"] if metrics["completed_orders"] else max(persona["response_time_minutes"], 35)
         response_rate = min(99, persona["response_rate_base"] + metrics["active_products"] + metrics["completed_orders"])
         trust_score = min(98, persona["trust_score_base"] + metrics["completed_orders"] * 2 + metrics["review_count"])
         average_rating = metrics["average_rating"] or persona["fallback_rating"]
+        report_count = int(metrics.get("report_count", 0))
+        trust_level = str(metrics.get("trust_level", "MEDIUM"))
         return {
             "id": user.id,
             "display_name": user.display_name,
@@ -78,9 +80,12 @@ class IdentityService:
             "trust_score": trust_score,
             "on_sale_count": metrics["active_products"],
             "trust_highlights": [
-                {"title": "信用评分", "detail": f"{trust_score} / 100，基于历史成交、评价与资料完整度生成。"},
+                {
+                    "title": "信用评分",
+                    "detail": f"{trust_score} / 100，数据库按成交、评分与举报量评估为 {trust_level}。",
+                },
                 {"title": "历史交易", "detail": f"累计完成 {metrics['completed_orders']} 笔交易，当前公开在售 {metrics['active_products']} 件。"},
-                {"title": "交易偏好", "detail": persona["deal_style"]},
+                {"title": "治理记录", "detail": f"关联举报 {report_count} 条，平台可追溯交易与申诉记录。"},
             ],
             "created_at": user.created_at,
             "updated_at": user.updated_at,

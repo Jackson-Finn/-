@@ -274,6 +274,31 @@ class IntelligenceService:
             ],
         }
 
+    def _risk_overview(self) -> dict:
+        row = self.db.execute(
+            text(
+                """
+                SELECT
+                    pending_reports,
+                    pending_appeals,
+                    pending_audit_tasks,
+                    processed_reports,
+                    approved_appeals,
+                    rejected_appeals
+                FROM vw_admin_risk_overview
+                LIMIT 1
+                """
+            )
+        ).mappings().first()
+        return dict(row) if row else {
+            "pending_reports": 0,
+            "pending_appeals": 0,
+            "pending_audit_tasks": 0,
+            "processed_reports": 0,
+            "approved_appeals": 0,
+            "rejected_appeals": 0,
+        }
+
     def _product_card(self, product: Product | None) -> dict:
         if not product:
             return {}
@@ -779,14 +804,21 @@ class IntelligenceService:
         }
 
     def overview(self):
+        risk = self._risk_overview()
         products = len(self.catalog_repo.list_products())
-        pending = len(self.catalog_repo.list_pending_products())
         jobs = self.db.query(JobRunLog).count()
         reports = self.db.query(Report).count()
         orders = self.db.query(Order).count()
-        return {"products": products, "pending_audits": pending, "job_count": jobs, "reports": reports, "orders": orders}
+        return {
+            "products": products,
+            "pending_audits": int(risk["pending_audit_tasks"]),
+            "job_count": jobs,
+            "reports": reports,
+            "orders": orders,
+        }
 
     def charts(self):
+        risk = self._risk_overview()
         order_status = [
             {"name": status or "UNKNOWN", "value": count}
             for status, count in self.db.query(Order.status, func.count(Order.id)).group_by(Order.status).all()
@@ -797,7 +829,7 @@ class IntelligenceService:
         ]
         return {
             "orderStatus": order_status,
-            "auditQueue": [{"name": "PENDING", "value": len(self.catalog_repo.list_pending_products())}],
+            "auditQueue": [{"name": "PENDING", "value": int(risk["pending_audit_tasks"])}],
             "reportOutcome": report_outcome,
         }
 

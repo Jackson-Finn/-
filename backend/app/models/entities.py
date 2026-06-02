@@ -1,6 +1,18 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.core.database import Base
@@ -97,6 +109,22 @@ class Category(Base, TimestampMixin):
 
 class Product(Base, TimestampMixin):
     __tablename__ = "products"
+    __table_args__ = (
+        CheckConstraint("price >= 0", name="ck_products_price_non_negative"),
+        CheckConstraint("stock >= 0", name="ck_products_stock_non_negative"),
+        Index(
+            "ix_products_audit_status_product_status_updated_at",
+            "audit_status",
+            "product_status",
+            "updated_at",
+        ),
+        Index(
+            "ix_products_category_status_price",
+            "category_id",
+            "product_status",
+            "price",
+        ),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     seller_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"), nullable=True)
@@ -118,6 +146,9 @@ class ProductImage(Base, TimestampMixin):
 
 class Order(Base, TimestampMixin):
     __tablename__ = "orders"
+    __table_args__ = (
+        Index("ix_orders_buyer_status_created_at", "buyer_id", "status", "created_at"),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     buyer_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     seller_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
@@ -128,6 +159,7 @@ class Order(Base, TimestampMixin):
 
 class OrderItem(Base):
     __tablename__ = "order_items"
+    __table_args__ = (CheckConstraint("quantity > 0", name="ck_order_items_quantity_positive"),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"))
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
@@ -137,6 +169,11 @@ class OrderItem(Base):
 
 class Review(Base, TimestampMixin):
     __tablename__ = "reviews"
+    __table_args__ = (
+        CheckConstraint("rating BETWEEN 1 AND 5", name="ck_reviews_rating_range"),
+        UniqueConstraint("order_id", "review_type", name="uq_reviews_order_review_type"),
+        Index("ix_reviews_product_created_at", "product_id", "created_at"),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"))
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
@@ -210,6 +247,7 @@ class AdminNotificationBroadcast(Base, TimestampMixin):
 
 class Report(Base, TimestampMixin):
     __tablename__ = "reports"
+    __table_args__ = (Index("ix_reports_status_created_at", "status", "created_at"),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     reporter_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     target_type: Mapped[str] = mapped_column(String(64))
@@ -231,6 +269,9 @@ class Appeal(Base, TimestampMixin):
 
 class AuditTask(Base, TimestampMixin):
     __tablename__ = "audit_tasks"
+    __table_args__ = (
+        Index("ix_audit_tasks_entity_status_created_at", "entity_type", "status", "created_at"),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     task_type: Mapped[str] = mapped_column(String(64))
     entity_type: Mapped[str] = mapped_column(String(64))

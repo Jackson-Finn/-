@@ -1,3 +1,4 @@
+import json
 from io import BytesIO
 
 from fastapi import UploadFile
@@ -27,6 +28,18 @@ class CatalogService:
     @staticmethod
     def _tags(product: Product) -> dict:
         return product.tags if isinstance(product.tags, dict) else {}
+
+    @staticmethod
+    def _mapping_tags(payload: dict | str | None) -> dict:
+        if isinstance(payload, dict):
+            return payload
+        if isinstance(payload, str):
+            try:
+                parsed = json.loads(payload)
+            except json.JSONDecodeError:
+                return {}
+            return parsed if isinstance(parsed, dict) else {}
+        return {}
 
     @staticmethod
     def _condition_label(tags: dict, title: str) -> str:
@@ -183,6 +196,23 @@ class CatalogService:
             "updated_at": payload["updated_at"],
         }
 
+    def serialize_product_summary_from_view(self, row: dict) -> dict:
+        tags = self._mapping_tags(row.get("tags"))
+        return {
+            "id": row["id"],
+            "seller_id": row["seller_id"],
+            "seller_name": row.get("seller_name"),
+            "category_name": row.get("category_name"),
+            "title": row["title"],
+            "price": row["price"],
+            "product_status": row["product_status"],
+            "audit_status": row["audit_status"],
+            "cover_image": row.get("cover_image"),
+            "hero_summary": row.get("hero_summary") or str(tags.get("hero_summary") or row.get("description") or "")[:88],
+            "condition_label": row.get("condition_label") or self._condition_label(tags, row["title"]),
+            "updated_at": row.get("updated_at"),
+        }
+
     def list_products(self, keyword: str | None = None):
         if keyword:
             indexed_ids = self.search.search_product_ids(keyword)
@@ -200,7 +230,7 @@ class CatalogService:
         sort: str = "newest",
         delivery_method: str | None = None,
     ) -> dict:
-        products = self.repo.search_products(
+        products = self.repo.search_products_from_catalog_view(
             keyword=keyword,
             category=category,
             price_min=price_min,
@@ -210,17 +240,26 @@ class CatalogService:
         if condition:
             normalized = condition.replace(" ", "").lower()
             products = [
-                product for product in products
-                if normalized in self._condition_label(self._tags(product), product.title).replace(" ", "").lower()
+                product
+                for product in products
+                if normalized
+                in (
+                    product.get("condition_label")
+                    or self._condition_label(self._mapping_tags(product.get("tags")), product["title"])
+                ).replace(" ", "").lower()
             ]
         if delivery_method:
             normalized = delivery_method.strip().lower()
             products = [
-                product for product in products
-                if any(normalized in str(option.get("value") or "").lower() for option in self._delivery_options(self._tags(product)))
+                product
+                for product in products
+                if any(
+                    normalized in str(option.get("value") or "").lower()
+                    for option in self._delivery_options(self._mapping_tags(product.get("tags")))
+                )
             ]
 
-        serialized_items = [self.serialize_product_summary(product) for product in products]
+        serialized_items = [self.serialize_product_summary_from_view(product) for product in products]
         category_facets: dict[str, int] = {}
         condition_facets: dict[str, int] = {}
         for item in serialized_items:

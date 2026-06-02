@@ -48,6 +48,7 @@ def mysql_engine(mysql_admin_url: str, mysql_database_url: str):
     assert database_username, "TEST_DATABASE_URL must include a username"
 
     with admin_engine.connect() as connection:
+        connection.execute(text("SET GLOBAL log_bin_trust_function_creators = 1"))
         connection.execute(text(f"DROP DATABASE IF EXISTS `{database_name}`"))
         connection.execute(
             text(

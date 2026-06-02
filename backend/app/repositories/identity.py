@@ -1,4 +1,4 @@
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from app.core.enums import AuditStatus, OrderStatus, ProductStatus, ReviewType
@@ -69,6 +69,27 @@ class IdentityRepository:
             "average_rating": round(float(average_rating or 0), 1),
             "review_count": int(review_count or 0),
         }
+
+    def seller_metrics_from_view(self, seller_id: int) -> dict | None:
+        row = self.db.execute(
+            text(
+                """
+                SELECT
+                    seller_id,
+                    total_products,
+                    active_products,
+                    completed_orders,
+                    average_rating,
+                    review_count,
+                    report_count,
+                    trust_level
+                FROM vw_seller_operational_summary
+                WHERE seller_id = :seller_id
+                """
+            ),
+            {"seller_id": seller_id},
+        ).mappings().first()
+        return dict(row) if row else None
 
     def list_roles(self) -> list[Role]:
         return self.db.query(Role).order_by(Role.id.asc()).all()
