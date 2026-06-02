@@ -15,11 +15,10 @@ def build_client(tmp_path: Path) -> TestClient:
     return TestClient(module.app)
 
 
-def test_health_endpoint(tmp_path: Path):
-    with build_client(tmp_path) as client:
-        response = client.get("/health")
-        assert response.status_code == 200
-        assert response.json() == {"status": "ok"}
+def test_health_endpoint(mysql_client):
+    response = mysql_client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 
 def test_seeded_admin_login_and_me(tmp_path: Path):

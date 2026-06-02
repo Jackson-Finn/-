@@ -57,15 +57,18 @@ def ensure_runtime_columns() -> None:
                     """
                     DELETE FROM browse_history
                     WHERE id IN (
-                      SELECT older.id
-                      FROM browse_history AS older
-                      JOIN browse_history AS newer
-                        ON older.user_id = newer.user_id
-                       AND older.product_id = newer.product_id
-                       AND (
-                         older.updated_at < newer.updated_at
-                         OR (older.updated_at = newer.updated_at AND older.id < newer.id)
-                       )
+                      SELECT duplicate_ids.id
+                      FROM (
+                        SELECT older.id
+                        FROM browse_history AS older
+                        JOIN browse_history AS newer
+                          ON older.user_id = newer.user_id
+                         AND older.product_id = newer.product_id
+                         AND (
+                           older.updated_at < newer.updated_at
+                           OR (older.updated_at = newer.updated_at AND older.id < newer.id)
+                         )
+                      ) AS duplicate_ids
                     )
                     """
                 )

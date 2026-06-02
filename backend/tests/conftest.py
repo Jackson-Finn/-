@@ -69,7 +69,6 @@ def mysql_client(mysql_engine, mysql_database_url: str) -> Generator[TestClient,
     main_module = importlib.import_module("app.main")
     Base = database_module.Base
     get_db = database_module.get_db
-    main_module.ensure_runtime_columns = lambda: None
     app = main_module.app
 
     Base.metadata.create_all(bind=mysql_engine)
