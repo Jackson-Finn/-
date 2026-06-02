@@ -80,7 +80,14 @@ class IntelligenceService:
         try:
             self.db.execute(text("SELECT 1"))
             bind = self.db.get_bind()
-            backend = bind.url.get_backend_name() if bind else "unknown"
+            if bind is None:
+                backend = "unknown"
+            elif hasattr(bind, "url"):
+                backend = bind.url.get_backend_name()
+            elif hasattr(bind, "engine") and hasattr(bind.engine, "url"):
+                backend = bind.engine.url.get_backend_name()
+            else:
+                backend = getattr(getattr(bind, "dialect", None), "name", "unknown")
             return self._check_result(
                 "database",
                 "数据库",

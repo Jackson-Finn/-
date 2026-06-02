@@ -2,8 +2,11 @@ import importlib
 import os
 import sys
 from collections.abc import Generator
+from pathlib import Path
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
@@ -11,12 +14,18 @@ from sqlalchemy.orm import Session, sessionmaker
 
 os.environ.setdefault(
     "TEST_DATABASE_ADMIN_URL",
-    "mysql+pymysql://root:root@127.0.0.1:3307/mysql?charset=utf8mb4",
+    "mysql+pymysql://root:root@127.0.0.1:3306/mysql?charset=utf8mb4",
 )
 os.environ.setdefault(
     "TEST_DATABASE_URL",
-    "mysql+pymysql://marketplace:marketplace@127.0.0.1:3307/advanced_marketplace_test?charset=utf8mb4",
+    "mysql+pymysql://marketplace:marketplace@127.0.0.1:3306/advanced_marketplace_test?charset=utf8mb4",
 )
+
+
+def _clear_app_modules() -> None:
+    for name in list(sys.modules):
+        if name == "app" or name.startswith("app."):
+            sys.modules.pop(name)
 
 
 @pytest.fixture(scope="session")
@@ -50,6 +59,15 @@ def mysql_engine(mysql_admin_url: str, mysql_database_url: str):
             text(f"GRANT ALL PRIVILEGES ON `{database_name}`.* TO 'marketplace'@'localhost'")
         )
 
+    previous_database_url = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = mysql_database_url
+    alembic_config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
+    command.upgrade(alembic_config, "head")
+    if previous_database_url is None:
+        os.environ.pop("DATABASE_URL", None)
+    else:
+        os.environ["DATABASE_URL"] = previous_database_url
+
     engine = create_engine(mysql_database_url, future=True)
     yield engine
     engine.dispose()
@@ -57,35 +75,66 @@ def mysql_engine(mysql_admin_url: str, mysql_database_url: str):
 
 
 @pytest.fixture()
-def mysql_client(mysql_engine, mysql_database_url: str) -> Generator[TestClient, None, None]:
+def mysql_test_context(mysql_engine, mysql_database_url: str):
     previous_database_url = os.environ.get("DATABASE_URL")
     os.environ["DATABASE_URL"] = mysql_database_url
 
-    for name in list(sys.modules):
-        if name == "app" or name.startswith("app."):
-            sys.modules.pop(name)
+    _clear_app_modules()
 
     database_module = importlib.import_module("app.core.database")
     main_module = importlib.import_module("app.main")
-    Base = database_module.Base
-    get_db = database_module.get_db
-    app = main_module.app
+    jobs_module = importlib.import_module("app.tasks.jobs")
 
-    Base.metadata.create_all(bind=mysql_engine)
-
+    connection = mysql_engine.connect()
+    transaction = connection.begin()
     TestingSessionLocal = sessionmaker(
-        bind=mysql_engine,
+        bind=connection,
         autocommit=False,
         autoflush=False,
         future=True,
+        join_transaction_mode="create_savepoint",
     )
 
+    database_module.SessionLocal = TestingSessionLocal
+    main_module.SessionLocal = TestingSessionLocal
+    jobs_module.SessionLocal = TestingSessionLocal
+
+    try:
+        yield {
+            "database_module": database_module,
+            "main_module": main_module,
+            "session_factory": TestingSessionLocal,
+        }
+    finally:
+        transaction.rollback()
+        connection.close()
+        if previous_database_url is None:
+            os.environ.pop("DATABASE_URL", None)
+        else:
+            os.environ["DATABASE_URL"] = previous_database_url
+
+
+@pytest.fixture()
+def db_session(mysql_test_context) -> Generator[Session, None, None]:
+    session = mysql_test_context["session_factory"]()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+@pytest.fixture()
+def mysql_client(mysql_test_context, db_session: Session) -> Generator[TestClient, None, None]:
+    database_module = mysql_test_context["database_module"]
+    main_module = mysql_test_context["main_module"]
+    get_db = database_module.get_db
+    app = main_module.app
+
     def override_get_db() -> Generator[Session, None, None]:
-        db = TestingSessionLocal()
         try:
-            yield db
+            yield db_session
         finally:
-            db.close()
+            pass
 
     app.dependency_overrides[get_db] = override_get_db
     try:
@@ -93,7 +142,3 @@ def mysql_client(mysql_engine, mysql_database_url: str) -> Generator[TestClient,
             yield client
     finally:
         app.dependency_overrides.clear()
-        if previous_database_url is None:
-            os.environ.pop("DATABASE_URL", None)
-        else:
-            os.environ["DATABASE_URL"] = previous_database_url
