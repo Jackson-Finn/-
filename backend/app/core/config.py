@@ -10,7 +10,10 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     secret_key: str = "advanced-marketplace-dev-secret-key-2026"
     access_token_expire_minutes: int = 60 * 24
-    database_url: str = "sqlite:///./data/advanced_marketplace.db"
+    database_url: str = (
+        "mysql+pymysql://marketplace:marketplace@127.0.0.1:3306/"
+        "advanced_marketplace?charset=utf8mb4"
+    )
     redis_url: str = "redis://redis:6379/0"
     minio_endpoint: str = "minio:9000"
     minio_access_key: str = "minioadmin"
