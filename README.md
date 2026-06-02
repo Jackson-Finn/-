@@ -33,11 +33,14 @@ mysql+pymysql://marketplace:marketplace@127.0.0.1:3306/advanced_marketplace?char
 如果你本机已经有可用的 MySQL 8，可以先执行：
 
 ```sql
+SET GLOBAL log_bin_trust_function_creators = 1;
 CREATE DATABASE IF NOT EXISTS advanced_marketplace CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'marketplace'@'127.0.0.1' IDENTIFIED BY 'marketplace';
 GRANT ALL PRIVILEGES ON advanced_marketplace.* TO 'marketplace'@'127.0.0.1';
 FLUSH PRIVILEGES;
 ```
+
+如果你希望这个设置在 MySQL 重启后也保留，可以改成 `SET PERSIST log_bin_trust_function_creators = 1;`。
 
 3. 迁移数据库并启动后端
 
@@ -134,3 +137,4 @@ make docker-config
 - 本地默认使用 `STORAGE_BACKEND=local`，上传文件会写入 `backend/storage/uploads`。
 - 容器模式会切到 `STORAGE_BACKEND=minio`。
 - 搜索在 OpenSearch 不可用时会自动回退到数据库模式。
+- 数据库高级对象与截图建议整理在 [docs/database-objects.md](/Users/yzj/vs-workspace/db-design/docs/database-objects.md:1)。
