@@ -2,9 +2,9 @@
   <div class="queue-page">
     <section class="page-head">
       <div>
-        <div class="eyebrow">Audit Queue</div>
+        <div class="eyebrow">待办队列</div>
         <h2 class="page-title">待办队列</h2>
-        <p class="page-meta">从队列进入对象详情，处理完成后继续下一个。</p>
+        <p class="page-meta">从当前待办直接进入商品详情，处理后继续下一个对象。</p>
       </div>
       <el-space wrap>
         <RouterLink to="/admin/products">

@@ -51,20 +51,19 @@ const statusMeta = computed(() => getStatusMeta(props.product))
 <style scoped>
 .product-card {
   display: grid;
-  gap: 16px;
+  gap: 14px;
   overflow: hidden;
-  padding: 14px;
-  border-radius: 24px;
-  background: rgba(255, 252, 247, 0.95);
-  border: 1px solid rgba(73, 57, 41, 0.08);
-  box-shadow: var(--shadow-soft);
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .product-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(35, 68, 93, 0.16);
-  box-shadow: 0 20px 40px rgba(37, 26, 17, 0.1);
+  transform: translateY(-2px);
+  border-color: rgba(31, 59, 99, 0.18);
+  box-shadow: var(--shadow-soft);
 }
 
 .media-link {
@@ -75,8 +74,8 @@ const statusMeta = computed(() => getStatusMeta(props.product))
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-radius: 18px;
-  background: linear-gradient(180deg, #efe7dc 0%, #e8dfd3 100%);
+  border-radius: 12px;
+  background: var(--surface-muted);
 }
 
 .cover {
@@ -98,10 +97,9 @@ const statusMeta = computed(() => getStatusMeta(props.product))
   position: absolute;
   left: 16px;
   top: 16px;
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .image-placeholder strong {
@@ -123,21 +121,22 @@ const statusMeta = computed(() => getStatusMeta(props.product))
 .soft-pill {
   display: inline-flex;
   align-items: center;
-  padding: 6px 10px;
+  padding: 5px 8px;
   border-radius: 999px;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  backdrop-filter: blur(10px);
 }
 
 .status-pill {
-  background: rgba(255, 253, 249, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   color: var(--text);
+  border: 1px solid var(--line);
 }
 
 .soft-pill {
-  background: rgba(255, 253, 249, 0.72);
+  background: rgba(255, 255, 255, 0.86);
   color: var(--muted-strong);
+  border: 1px solid var(--line);
 }
 
 .tone-positive {
@@ -159,7 +158,7 @@ const statusMeta = computed(() => getStatusMeta(props.product))
 .card-copy {
   display: grid;
   gap: 10px;
-  padding: 0 4px 4px;
+  padding: 0 2px 2px;
 }
 
 .meta-row {
@@ -181,16 +180,17 @@ const statusMeta = computed(() => getStatusMeta(props.product))
 
 .title-link h3 {
   margin: 0;
-  font-size: 1.04rem;
+  font-size: 0.98rem;
   font-weight: 700;
-  line-height: 1.4;
+  line-height: 1.45;
   letter-spacing: -0.02em;
 }
 
 .summary {
   margin: 0;
   color: var(--muted);
-  line-height: 1.7;
+  font-size: 0.9rem;
+  line-height: 1.65;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -211,7 +211,7 @@ const statusMeta = computed(() => getStatusMeta(props.product))
 }
 
 .price-block strong {
-  font-size: 1.18rem;
+  font-size: 1.08rem;
   line-height: 1;
   letter-spacing: -0.03em;
 }

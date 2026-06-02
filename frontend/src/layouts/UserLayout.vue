@@ -6,11 +6,14 @@
     <main class="main">
       <header class="topbar panel">
         <div class="topbar-copy">
-          <div class="eyebrow">Marketplace</div>
-          <h1>二手交易</h1>
-          <p class="topbar-meta">找好物、聊细节、放心买，轻松完成每一笔二手交易。</p>
+          <div class="eyebrow">二手交易平台</div>
+          <h1>交易工作台</h1>
+          <p class="topbar-meta">围绕商品、价格、成色和交付方式组织信息，减少无效装饰。</p>
         </div>
         <div class="actions">
+          <RouterLink to="/search">
+            <el-button plain>搜索与筛选</el-button>
+          </RouterLink>
           <el-popover v-if="userStore.isAuthenticated" placement="bottom-end" :width="460" trigger="click">
             <template #reference>
               <el-badge :value="uiStore.unreadNotifications" :hidden="!uiStore.unreadNotifications">
@@ -124,7 +127,7 @@ function logout() {
 .shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 248px 1fr;
+  grid-template-columns: 236px 1fr;
 }
 
 .left {
@@ -136,7 +139,7 @@ function logout() {
 }
 
 .topbar {
-  padding: 18px 22px;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -146,10 +149,10 @@ function logout() {
 .topbar h1 {
   margin: 0 0 4px;
   font-family: var(--font-ui);
-  font-size: clamp(1.2rem, 1.8vw, 1.55rem);
+  font-size: clamp(1.15rem, 1.5vw, 1.4rem);
   font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
 .topbar-copy {
@@ -158,9 +161,9 @@ function logout() {
 
 .topbar-meta {
   margin: 0;
-  max-width: 44ch;
+  max-width: 52ch;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
 .actions {

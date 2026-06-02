@@ -69,17 +69,18 @@ function isItemActive(item) {
 .sidebar {
   position: sticky;
   top: 24px;
-  padding: 18px 16px;
+  padding: 18px 14px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
 .brand {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 6px 6px 2px;
+  padding: 4px 4px 8px;
+  border-bottom: 1px solid var(--line);
 }
 
 .brand-copy {
@@ -89,16 +90,16 @@ function isItemActive(item) {
 .brand p {
   margin: 4px 0 0;
   color: var(--muted);
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 0.82rem;
+  line-height: 1.55;
 }
 
 .brand-logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 14px 24px rgba(37, 86, 216, 0.2);
+  border: 1px solid var(--line);
 }
 
 .brand-logo img {
@@ -109,22 +110,22 @@ function isItemActive(item) {
 
 .brand strong {
   display: block;
-  font-size: 1.02rem;
+  font-size: 0.98rem;
   line-height: 1.2;
 }
 
 .nav-caption {
   padding: 0 8px;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 .nav-group {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .secondary-group {
@@ -137,27 +138,27 @@ function isItemActive(item) {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 12px;
-  border-radius: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
   color: var(--text);
   border: 1px solid transparent;
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .nav-icon {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
-  background: #f5f8fd;
+  border-radius: 8px;
+  background: var(--surface-soft);
   color: var(--muted);
 }
 
 .nav-link:hover,
 .nav-link.is-active {
-  background: #f7faff;
-  border-color: rgba(37, 86, 216, 0.12);
+  background: var(--surface-soft);
+  border-color: var(--line);
 }
 
 .nav-link.is-active {
@@ -173,9 +174,9 @@ function isItemActive(item) {
   content: "";
   position: absolute;
   left: -1px;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
   border-radius: 999px;
   background: var(--brand);
 }

@@ -2,13 +2,13 @@
   <div class="grid">
     <section class="panel overview-bar">
       <div>
-        <div class="eyebrow">Overview</div>
-        <h2 class="section-title">后台概览</h2>
-        <p class="section-meta">优先看待办、治理和系统状态，再决定下一步处理。</p>
+        <div class="eyebrow">运营总览</div>
+        <h2 class="section-title">运营概览</h2>
+        <p class="section-meta">把待审商品、治理动作和系统状态放在同一屏处理。</p>
       </div>
       <div class="action-grid">
         <RouterLink to="/admin/audits">
-          <el-button type="primary">进入待办队列</el-button>
+          <el-button type="primary">处理待审商品</el-button>
         </RouterLink>
         <RouterLink to="/admin/products">
           <el-button plain>查看商品列表</el-button>
@@ -19,7 +19,7 @@
 
     <section class="grid grid-4">
       <StatPanel label="商品总量" :value="overview.products" description="平台当前沉淀的商品规模和可运营内容" />
-      <StatPanel label="待审核" :value="overview.pending_audits" description="最先该被处理的待办，能直接反映治理压力" />
+      <StatPanel label="待处理" :value="overview.pending_audits" description="最先该被处理的待办，能直接反映治理压力" />
       <StatPanel label="订单总量" :value="overview.orders" description="交易闭环规模，用来判断活跃度和演示数据完整性" />
       <StatPanel label="举报总量" :value="overview.reports" description="治理域处理负载，也是后台时间线的主要来源" />
     </section>
@@ -33,9 +33,9 @@
       <div class="panel" style="padding: 22px;">
         <div class="section-header">
           <div>
-            <div class="eyebrow">Audit Queue</div>
-            <h3 class="section-title">审核队列</h3>
-            <p class="section-meta">点击具体对象进入详情处理。</p>
+            <div class="eyebrow">待办队列</div>
+            <h3 class="section-title">待处理商品</h3>
+            <p class="section-meta">按队列顺序进入商品详情，减少运营切换成本。</p>
           </div>
           <RouterLink to="/admin/audits">
             <el-button plain>全部待办</el-button>
@@ -63,9 +63,9 @@
       <div class="panel" style="padding: 22px;">
         <div class="section-header">
           <div>
-            <div class="eyebrow">Quick Actions</div>
-            <h3 class="section-title">系统动作</h3>
-            <p class="section-meta">重建类动作支持入队或同步回退。</p>
+            <div class="eyebrow">系统动作</div>
+            <h3 class="section-title">运营工具</h3>
+            <p class="section-meta">推荐刷新、索引重建和平台诊断统一放在这里。</p>
           </div>
         </div>
         <div class="action-grid stacked">
@@ -81,7 +81,7 @@
     <section class="panel" style="padding: 22px;">
       <div class="section-header">
         <div>
-          <div class="eyebrow">Operation Trail</div>
+          <div class="eyebrow">操作记录</div>
           <h3 class="section-title">最近操作记录</h3>
           <p class="section-meta">审核、举报和申诉处理都会留下可追踪记录</p>
         </div>

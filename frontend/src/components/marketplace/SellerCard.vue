@@ -52,10 +52,10 @@ const metrics = computed(() => sellerMetricItems(props.seller))
 .seller-card {
   display: grid;
   gap: 18px;
-  padding: 24px;
-  border-radius: 28px;
-  background: rgba(255, 252, 247, 0.94);
-  box-shadow: var(--shadow-soft);
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
 .seller-head {
@@ -67,7 +67,7 @@ const metrics = computed(() => sellerMetricItems(props.seller))
 .seller-avatar {
   width: 72px;
   height: 72px;
-  border-radius: 24px;
+  border-radius: 12px;
   object-fit: cover;
   flex-shrink: 0;
   background: var(--surface-muted);
@@ -83,8 +83,8 @@ const metrics = computed(() => sellerMetricItems(props.seller))
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 .seller-copy h3 {
@@ -111,10 +111,11 @@ const metrics = computed(() => sellerMetricItems(props.seller))
   align-items: center;
   padding: 7px 11px;
   border-radius: 999px;
-  background: var(--trust-soft);
-  color: var(--trust);
+  background: var(--surface-soft);
+  color: var(--muted-strong);
   font-size: 0.78rem;
   font-weight: 800;
+  border: 1px solid var(--line);
 }
 
 .metric-grid {
@@ -127,8 +128,9 @@ const metrics = computed(() => sellerMetricItems(props.seller))
   display: grid;
   gap: 6px;
   padding: 14px 16px;
-  border-radius: 18px;
-  background: rgba(49, 95, 84, 0.05);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
 }
 
 .metric-card span {
@@ -148,8 +150,9 @@ const metrics = computed(() => sellerMetricItems(props.seller))
 
 .trust-item {
   padding: 14px 16px;
-  border-radius: 18px;
-  background: rgba(73, 57, 41, 0.04);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
 }
 
 .trust-item strong {

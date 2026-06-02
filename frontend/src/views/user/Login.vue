@@ -3,9 +3,9 @@
     <div class="panel auth-card">
       <div class="section-header">
         <div>
-          <div class="pill">欢迎回来</div>
-          <h2 class="section-title">登录高级版交易平台</h2>
-          <p class="section-meta">默认已切到演示买家账号，便于直接查看收藏、最近浏览和下单流程。</p>
+          <div class="eyebrow">账户登录</div>
+          <h2 class="section-title">登录你的账户</h2>
+          <p class="section-meta">继续查看收藏、消息、订单和正在对比的商品。</p>
         </div>
       </div>
       <el-form :model="form" label-position="top" @submit.prevent="onSubmit">
@@ -60,11 +60,13 @@ async function onSubmit() {
 }
 
 .auth-card {
-  width: min(520px, 100%);
-  padding: 28px;
+  width: min(440px, 100%);
+  padding: 28px 24px;
 }
 
 .link {
-  margin-left: 16px;
+  display: inline-block;
+  margin-top: 14px;
+  margin-left: 0;
 }
 </style>

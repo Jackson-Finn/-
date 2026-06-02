@@ -6,9 +6,9 @@
     <main class="main">
       <header class="topbar panel">
         <div class="topbar-copy">
-          <div class="eyebrow">Operations</div>
-          <h1>管理后台</h1>
-          <p class="topbar-meta">优先展示待处理任务、通知运营和治理动作，把技术诊断下沉到系统设置。</p>
+          <div class="eyebrow">运营控制台</div>
+          <h1>待处理任务与运营动作</h1>
+          <p class="topbar-meta">先看待审、治理与系统动作，再进入对象详情处理。</p>
         </div>
         <div class="actions">
           <el-popover placement="bottom-end" :width="460" trigger="click">
@@ -99,7 +99,7 @@ async function updatePresenceStatus(nextStatus) {
 .shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 248px 1fr;
+  grid-template-columns: 236px 1fr;
 }
 
 .left {
@@ -111,7 +111,7 @@ async function updatePresenceStatus(nextStatus) {
 }
 
 .topbar {
-  padding: 18px 22px;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -121,10 +121,10 @@ async function updatePresenceStatus(nextStatus) {
 .topbar h1 {
   margin: 0 0 4px;
   font-family: var(--font-ui);
-  font-size: clamp(1.2rem, 1.8vw, 1.55rem);
+  font-size: clamp(1.15rem, 1.5vw, 1.4rem);
   font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
 .topbar-copy {
@@ -133,9 +133,9 @@ async function updatePresenceStatus(nextStatus) {
 
 .topbar-meta {
   margin: 0;
-  max-width: 44ch;
+  max-width: 52ch;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
 .actions {

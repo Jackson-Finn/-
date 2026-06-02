@@ -703,8 +703,8 @@ watch(
 
 .detail-shell {
   display: grid;
-  gap: 24px;
-  max-width: 1440px;
+  gap: 20px;
+  max-width: 1360px;
   margin: 0 auto;
 }
 
@@ -716,9 +716,9 @@ watch(
 .back-button {
   min-height: 42px;
   padding: 0 16px;
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(73, 57, 41, 0.06);
+  background: var(--surface);
   color: var(--text);
   font-weight: 800;
   cursor: pointer;
@@ -727,7 +727,7 @@ watch(
 .hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(360px, 0.82fr);
-  gap: 22px;
+  gap: 20px;
   align-items: start;
 }
 
@@ -745,7 +745,7 @@ watch(
 
 .hero-copy-panel,
 .content-panel {
-  padding: 24px;
+  padding: 20px;
 }
 
 .seller-section {
@@ -768,8 +768,9 @@ watch(
   gap: 12px;
   align-items: start;
   padding: 16px 18px;
-  border-radius: 20px;
-  background: linear-gradient(180deg, rgba(36, 88, 222, 0.08), rgba(255, 255, 255, 0.92));
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
 }
 
 .ai-summary-card strong {
@@ -789,8 +790,9 @@ watch(
 .ai-card,
 .ai-list-block {
   padding: 16px 18px;
-  border-radius: 20px;
-  background: rgba(73, 57, 41, 0.04);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
 }
 
 .ai-card {

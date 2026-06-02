@@ -2,8 +2,8 @@
   <section class="detail-section">
     <div class="section-header">
       <div>
-        <h2 class="section-title">参数、交易方式与平台保障</h2>
-        <p class="section-meta">把规格、交付方式和平台提醒整理成同一组词条，减少重复阅读。</p>
+        <h2 class="section-title">交易方式与平台保障</h2>
+        <p class="section-meta">把交付方式、平台审核和风险提醒整理成一组词条，减少跳读。</p>
       </div>
     </div>
 
@@ -26,7 +26,7 @@ defineProps({
 <style scoped>
 .detail-section {
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .fact-grid {
@@ -36,9 +36,10 @@ defineProps({
 }
 
 .fact-card {
-  padding: 18px;
-  border-radius: 22px;
-  background: rgba(73, 57, 41, 0.04);
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
 }
 
 .fact-card span {
@@ -62,7 +63,7 @@ defineProps({
 }
 
 .fact-card.muted {
-  background: rgba(49, 95, 84, 0.06);
+  background: rgba(31, 59, 99, 0.04);
 }
 
 @media (max-width: 960px) {

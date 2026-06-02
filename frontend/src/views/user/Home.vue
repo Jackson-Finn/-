@@ -2,9 +2,9 @@
   <div class="home-page">
     <section class="panel search-hero">
       <div class="hero-copy">
-        <div class="eyebrow">Discover</div>
-        <h2 class="hero-title">发现宝贝，聊好价格，轻松交易。</h2>
-        <p class="section-meta">从搜索到下单，完整交易路径一目了然，随时了解商品动态。</p>
+        <div class="eyebrow">商品筛选</div>
+        <h2 class="hero-title">按预算、成色和交易方式找货</h2>
+        <p class="section-meta">把正在上架的商品、近期推荐和你的交易进度收在同一页，更像真实交易平台的工作台。</p>
       </div>
 
       <div class="hero-panel">
@@ -19,11 +19,12 @@
           />
           <el-button type="primary" @click="submitSearch">搜索</el-button>
         </div>
-        <p class="search-brief">在商品大厅里逛逛，或直接搜索缩小范围。</p>
+        <p class="search-brief">优先搜索在售商品，再决定是否进入详情页联系卖家。</p>
         <div class="hero-links">
-          <RouterLink class="hero-link" to="/messages">去看消息</RouterLink>
-          <RouterLink class="hero-link" to="/orders">处理订单</RouterLink>
-          <RouterLink class="hero-link" to="/profile">进入我的</RouterLink>
+          <RouterLink class="hero-link" to="/search">全部筛选</RouterLink>
+          <RouterLink class="hero-link" to="/messages">消息</RouterLink>
+          <RouterLink class="hero-link" to="/orders">订单</RouterLink>
+          <RouterLink class="hero-link" to="/profile">我的</RouterLink>
         </div>
       </div>
     </section>
@@ -48,12 +49,12 @@
       <section class="panel section-panel">
         <div class="section-header">
           <div>
-            <div class="eyebrow">Marketplace</div>
-            <h3 class="section-title">商品大厅</h3>
-            <p class="section-meta">公开在售的好物，看看有没有你想要的。</p>
+            <div class="eyebrow">商品流</div>
+            <h3 class="section-title">在售商品</h3>
+            <p class="section-meta">优先查看当前公开在售、可继续比较和沟通的商品。</p>
           </div>
           <RouterLink to="/search">
-            <el-button plain>进入搜索页</el-button>
+            <el-button plain>查看全部筛选</el-button>
           </RouterLink>
         </div>
 
@@ -76,18 +77,18 @@
       <section class="panel section-panel">
         <div class="section-header">
           <div>
-            <div class="eyebrow">Recommendations</div>
-            <h3 class="section-title">推荐流</h3>
-            <p class="section-meta">根据你的偏好精选，帮你更快找到心仪好物。</p>
+            <div class="eyebrow">优先推荐</div>
+            <h3 class="section-title">继续比较这些商品</h3>
+            <p class="section-meta">围绕浏览、收藏和订单信号，优先展示更值得继续比较的候选商品。</p>
           </div>
           <el-button plain @click="loadRecommendations">刷新推荐</el-button>
         </div>
 
         <article v-if="featuredRecommendation" class="featured-card">
           <div class="featured-copy">
-            <span class="featured-badge">Top Pick</span>
+            <span class="featured-badge">优先查看</span>
             <h3>{{ featuredRecommendation.title }}</h3>
-            <p class="section-meta">{{ featuredRecommendation.reason || '系统根据浏览、收藏和订单信号整理出这条推荐。' }}</p>
+            <p class="section-meta">{{ featuredRecommendation.reason || '这件商品和你最近的浏览、收藏与交易记录更接近。' }}</p>
             <div class="featured-meta">
               <span class="meta-pill">¥ {{ Number(featuredRecommendation.price || 0).toFixed(2) }}</span>
               <span v-if="featuredRecommendation.category_name" class="meta-pill">{{ featuredRecommendation.category_name }}</span>
@@ -120,9 +121,9 @@
     <section class="panel section-panel">
       <div class="section-header">
         <div>
-          <div class="eyebrow">Signals</div>
-          <h3 class="section-title">最近交易信号</h3>
-          <p class="section-meta">消息、订单、收藏和浏览记录统一汇总，随时把握交易进度。</p>
+          <div class="eyebrow">交易进度</div>
+          <h3 class="section-title">消息、订单与收藏</h3>
+          <p class="section-meta">先处理正在推进的沟通和订单，再回到商品流继续比较。</p>
         </div>
       </div>
 
@@ -365,7 +366,7 @@ const presenceLabel = computed(() => {
 <style scoped>
 .home-page {
   display: grid;
-  gap: 20px;
+  gap: 18px;
 }
 
 .search-hero,
@@ -375,8 +376,8 @@ const presenceLabel = computed(() => {
 
 .search-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.95fr);
-  gap: 24px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.9fr);
+  gap: 22px;
   align-items: stretch;
 }
 
@@ -396,8 +397,8 @@ const presenceLabel = computed(() => {
   display: grid;
   gap: 14px;
   padding: 20px;
-  border-radius: 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 242, 234, 0.92));
+  border-radius: 16px;
+  background: var(--surface-soft);
   border: 1px solid var(--line);
 }
 
@@ -416,16 +417,17 @@ const presenceLabel = computed(() => {
 .hero-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .hero-link {
-  padding: 10px 14px;
+  padding: 9px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--surface);
   border: 1px solid var(--line);
   color: var(--text);
   font-weight: 700;
+  font-size: 0.84rem;
 }
 
 .featured-card {
@@ -433,9 +435,9 @@ const presenceLabel = computed(() => {
   grid-template-columns: minmax(0, 1.1fr) 280px;
   gap: 18px;
   padding: 18px;
-  border-radius: 24px;
+  border-radius: 16px;
   border: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(249, 251, 255, 0.98), rgba(255, 255, 255, 0.94));
+  background: var(--surface-soft);
   margin-bottom: 18px;
 }
 
@@ -483,7 +485,7 @@ const presenceLabel = computed(() => {
   height: 100%;
   min-height: 240px;
   object-fit: cover;
-  border-radius: 18px;
+  border-radius: 12px;
 }
 
 .catalog-grid {
@@ -503,9 +505,9 @@ const presenceLabel = computed(() => {
   display: grid;
   gap: 6px;
   padding: 18px;
-  border-radius: 22px;
+  border-radius: 16px;
   border: 1px solid var(--line);
-  background: rgba(255, 252, 247, 0.96);
+  background: var(--surface-soft);
 }
 
 .signal-card strong {
@@ -532,10 +534,11 @@ const presenceLabel = computed(() => {
 
 .signal-panel {
   padding: 18px;
-  border-radius: 22px;
-  background: rgba(73, 57, 41, 0.04);
+  border-radius: 16px;
+  background: var(--surface-soft);
   display: grid;
   gap: 12px;
+  border: 1px solid var(--line);
 }
 
 .mini-head,
@@ -550,8 +553,9 @@ const presenceLabel = computed(() => {
   display: grid;
   gap: 4px;
   padding: 12px 14px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.86);
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
 .mini-link small {

@@ -92,13 +92,11 @@ defineExpose({ focusReportInput })
 <style scoped>
 .action-card {
   display: grid;
-  gap: 20px;
-  padding: 24px;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at top right, rgba(35, 68, 93, 0.1), transparent 30%),
-    rgba(255, 252, 247, 0.94);
-  box-shadow: var(--shadow);
+  gap: 18px;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
 .price-head {
@@ -118,7 +116,7 @@ defineExpose({ focusReportInput })
 .price-value {
   display: block;
   margin-top: 8px;
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   line-height: 1;
   letter-spacing: -0.06em;
 }
@@ -134,12 +132,13 @@ defineExpose({ focusReportInput })
 .status-pill {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: 30px;
+  padding: 0 10px;
   border-radius: 999px;
-  background: rgba(255, 253, 249, 0.92);
+  background: var(--surface-soft);
   font-size: 0.78rem;
   font-weight: 800;
+  border: 1px solid var(--line);
 }
 
 .tone-positive {
@@ -165,7 +164,7 @@ defineExpose({ focusReportInput })
 }
 
 .secondary-cta {
-  background: rgba(255, 252, 247, 0.72);
+  background: var(--surface-soft);
 }
 
 .secondary-actions {
@@ -178,9 +177,9 @@ defineExpose({ focusReportInput })
 .minor-action {
   min-height: 44px;
   min-width: 132px;
-  border: 0;
-  border-radius: 14px;
-  background: rgba(73, 57, 41, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
   color: var(--muted-strong);
   font-weight: 800;
   cursor: pointer;
@@ -234,7 +233,7 @@ defineExpose({ focusReportInput })
 }
 
 .action-feedback.tone-muted {
-  background: rgba(73, 57, 41, 0.06);
+  background: var(--surface-soft);
   color: var(--muted-strong);
 }
 
@@ -248,7 +247,8 @@ defineExpose({ focusReportInput })
 .report-box {
   display: grid;
   gap: 10px;
-  padding-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
 }
 
 .report-head {
