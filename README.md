@@ -54,6 +54,20 @@ make install-frontend
 make frontend
 ```
 
+5. 运行前端浏览器回归
+
+默认回归会连接 `http://localhost:8080`。如果你只启动了本地前端开发服务，可以先设置：
+
+```bash
+export E2E_BASE_URL='http://localhost:5173'
+```
+
+然后执行：
+
+```bash
+make frontend-e2e
+```
+
 本地常用地址：
 - 前端：`http://localhost:5173`
 - 后端：`http://localhost:8000`
@@ -105,6 +119,7 @@ make test
 make migrate
 make api
 make frontend
+make frontend-e2e
 make test
 make build
 make docker-up
