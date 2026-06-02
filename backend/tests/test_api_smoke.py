@@ -45,7 +45,9 @@ def test_seeded_product_listing_and_search(tmp_path: Path):
 
         search = client.get("/api/search/products", params={"keyword": "Switch"})
         assert search.status_code == 200
-        assert any("Switch" in item["title"] for item in search.json()["data"])
+        payload = search.json()["data"]
+        assert payload["total"] >= 1
+        assert any("Switch" in item["title"] for item in payload["items"])
 
 
 def test_anonymous_home_recommendations(tmp_path: Path):

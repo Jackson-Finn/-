@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.core.enums import ReviewType
+from app.core.enums import AuditStatus, ProductStatus, ReviewType
 from app.models.entities import BrowseHistory, Favorite, Order, OrderItem, Product, RecommendationMaterial, Review
 
 
