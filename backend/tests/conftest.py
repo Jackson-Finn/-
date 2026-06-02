@@ -41,8 +41,11 @@ def mysql_admin_url() -> str:
 @pytest.fixture(scope="session")
 def mysql_engine(mysql_admin_url: str, mysql_database_url: str):
     admin_engine = create_engine(mysql_admin_url, isolation_level="AUTOCOMMIT", future=True)
-    database_name = make_url(mysql_database_url).database
+    database_url = make_url(mysql_database_url)
+    database_name = database_url.database
+    database_username = database_url.username
     assert database_name, "TEST_DATABASE_URL must include a database name"
+    assert database_username, "TEST_DATABASE_URL must include a username"
 
     with admin_engine.connect() as connection:
         connection.execute(text(f"DROP DATABASE IF EXISTS `{database_name}`"))
@@ -52,12 +55,19 @@ def mysql_engine(mysql_admin_url: str, mysql_database_url: str):
                 "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
             )
         )
-        connection.execute(
-            text(f"GRANT ALL PRIVILEGES ON `{database_name}`.* TO 'marketplace'@'127.0.0.1'")
-        )
-        connection.execute(
-            text(f"GRANT ALL PRIVILEGES ON `{database_name}`.* TO 'marketplace'@'localhost'")
-        )
+        existing_hosts = connection.execute(
+            text("SELECT host FROM mysql.user WHERE user = :username ORDER BY host"),
+            {"username": database_username},
+        ).scalars().all()
+        assert existing_hosts, f"MySQL user '{database_username}' does not exist"
+
+        for host in existing_hosts:
+            connection.execute(
+                text(
+                    f"GRANT ALL PRIVILEGES ON `{database_name}`.* "
+                    f"TO '{database_username}'@'{host}'"
+                )
+            )
 
     previous_database_url = os.environ.get("DATABASE_URL")
     os.environ["DATABASE_URL"] = mysql_database_url
