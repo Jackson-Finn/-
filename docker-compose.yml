@@ -6,7 +6,6 @@ x-backend-common: &backend-common
   init: true
   volumes:
     - ./backend:/workspace/backend
-    - ./backend/data:/workspace/backend/data
     - backend-venv:/opt/venv
     - pip-cache:/root/.cache/pip
   env_file:
@@ -18,7 +17,7 @@ x-backend-common: &backend-common
     PIP_ROOT_USER_ACTION: ignore
     APP_ENV: container
     DEBUG: "true"
-    DATABASE_URL: sqlite:////workspace/backend/data/advanced_marketplace.db
+    DATABASE_URL: mysql+pymysql://marketplace:marketplace@mysql:3306/advanced_marketplace?charset=utf8mb4
     REDIS_URL: redis://redis:6379/0
     STORAGE_BACKEND: minio
     MINIO_ENDPOINT: minio:9000
@@ -29,16 +28,39 @@ x-backend-common: &backend-common
   restart: unless-stopped
 
 services:
+  mysql:
+    image: mysql:8.4
+    command: ["mysqld", "--mysqlx=OFF", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_DATABASE: advanced_marketplace
+      MYSQL_USER: marketplace
+      MYSQL_PASSWORD: marketplace
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -proot --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+
   api:
     <<: *backend-common
     command: >-
       sh -lc "if [ ! -x /opt/venv/bin/python ]; then python -m venv /opt/venv; fi
       && . /opt/venv/bin/activate
       && pip install --no-input -e .
+      && alembic upgrade head
       && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
     depends_on:
+      mysql:
+        condition: service_healthy
       redis:
         condition: service_healthy
       minio:
@@ -62,8 +84,11 @@ services:
       sh -lc "if [ ! -x /opt/venv/bin/python ]; then python -m venv /opt/venv; fi
       && . /opt/venv/bin/activate
       && pip install --no-input -e .
+      && alembic upgrade head
       && exec celery -A app.tasks.worker.celery_app worker --loglevel=info --concurrency=1 --prefetch-multiplier=1"
     depends_on:
+      mysql:
+        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -186,6 +211,7 @@ volumes:
   backend-venv:
   pip-cache:
   frontend-node-modules:
+  mysql-data:
   redis-data:
   minio-data:
   opensearch-data:

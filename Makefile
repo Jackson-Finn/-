@@ -3,10 +3,13 @@ CONDA_SH := $(HOME)/miniconda3/etc/profile.d/conda.sh
 ENV_NAME := advanced-marketplace
 COMPOSE := docker compose
 
-.PHONY: api frontend test build install-frontend demo docker-pull docker-up docker-down docker-logs docker-ps docker-config docker-smoke docker-reset
+.PHONY: api frontend test build install-frontend migrate demo docker-pull docker-up docker-down docker-logs docker-ps docker-config docker-smoke docker-reset
 
 api:
-	source "$(CONDA_SH)" && conda activate "$(ENV_NAME)" && cd backend && uvicorn app.main:app --reload
+	source "$(CONDA_SH)" && conda activate "$(ENV_NAME)" && cd backend && alembic upgrade head && uvicorn app.main:app --reload
+
+migrate:
+	source "$(CONDA_SH)" && conda activate "$(ENV_NAME)" && cd backend && alembic upgrade head
 
 frontend:
 	source "$(CONDA_SH)" && conda activate "$(ENV_NAME)" && cd frontend && npm run dev -- --host
@@ -21,11 +24,11 @@ build:
 	source "$(CONDA_SH)" && conda activate "$(ENV_NAME)" && cd frontend && npm run build
 
 demo:
-	@echo "1. make api"
-	@echo "2. make frontend"
-	@echo "3. Login as admin@example.com / Admin123!"
-	@echo "4. Visit /admin for audit, reports, appeals, and access control."
-	@echo "5. Login as seller@example.com and buyer@example.com in another browser profile to exercise publish/order/chat."
+	@echo "1. cp backend/.env.example backend/.env"
+	@echo "2. make migrate"
+	@echo "3. make api"
+	@echo "4. make frontend"
+	@echo "5. Login as admin@example.com / Admin123!"
 	@echo "6. docker compose is available through 'make docker-up' and serves the gateway on http://localhost:8080."
 
 docker-up:

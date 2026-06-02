@@ -10,9 +10,12 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     secret_key: str = "advanced-marketplace-dev-secret-key-2026"
     access_token_expire_minutes: int = 60 * 24
-    database_url: str = "sqlite:///./data/advanced_marketplace.db"
-    redis_url: str = "redis://redis:6379/0"
-    minio_endpoint: str = "minio:9000"
+    database_url: str = (
+        "mysql+pymysql://marketplace:marketplace@127.0.0.1:3306/"
+        "advanced_marketplace?charset=utf8mb4"
+    )
+    redis_url: str = "redis://127.0.0.1:6379/0"
+    minio_endpoint: str = "127.0.0.1:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"
     minio_bucket: str = "market-assets"
@@ -20,7 +23,7 @@ class Settings(BaseSettings):
     storage_backend: str = "local"
     media_storage_dir: str = "./storage/uploads"
     media_public_base_url: str = "http://localhost:8000"
-    opensearch_url: str = "http://opensearch:9200"
+    opensearch_url: str = "http://127.0.0.1:9200"
     opensearch_index: str = "products"
     ai_provider: str = "mock"
     ai_api_key: str = ""

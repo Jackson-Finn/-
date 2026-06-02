@@ -55,6 +55,9 @@ def _attach_images(db, product: Product, names: list[str]) -> None:
 
 
 def seed_defaults(db) -> None:
+    if db.query(User).first():
+        return
+
     permission_specs = [
         ("product.audit", "Audit products"),
         ("report.review", "Review reports"),
@@ -91,10 +94,6 @@ def seed_defaults(db) -> None:
         permission = permission_map[code]
         if (moderator_role.id, permission.id) not in existing_role_permissions:
             db.add(RolePermission(role_id=moderator_role.id, permission_id=permission.id))
-
-    if db.query(User).first():
-        db.commit()
-        return
 
     permissions = list(permission_map.values())
 
