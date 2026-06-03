@@ -284,7 +284,8 @@ class IntelligenceService:
                     pending_audit_tasks,
                     processed_reports,
                     approved_appeals,
-                    rejected_appeals
+                    rejected_appeals,
+                    governance_priority
                 FROM vw_admin_risk_overview
                 LIMIT 1
                 """
@@ -297,7 +298,29 @@ class IntelligenceService:
             "processed_reports": 0,
             "approved_appeals": 0,
             "rejected_appeals": 0,
+            "governance_priority": "LOW",
         }
+
+    def _latest_governance_snapshot(self) -> dict | None:
+        row = self.db.execute(
+            text(
+                """
+                SELECT
+                    snapshot_label,
+                    pending_reports,
+                    processed_reports,
+                    pending_appeals,
+                    approved_appeals,
+                    rejected_appeals,
+                    pending_audit_tasks,
+                    governance_priority,
+                    captured_at
+                FROM vw_latest_governance_snapshot
+                LIMIT 1
+                """
+            )
+        ).mappings().first()
+        return dict(row) if row else None
 
     def _product_card(self, product: Product | None) -> dict:
         if not product:
@@ -953,6 +976,8 @@ class IntelligenceService:
     def platform_ops(self):
         recent_jobs = self.repo.list_jobs(limit=12)
         failed_jobs = self.db.query(JobRunLog).filter(JobRunLog.status == "FAILED").order_by(JobRunLog.created_at.desc()).limit(8).all()
+        risk = self._risk_overview()
+        latest_snapshot = self._latest_governance_snapshot()
         event_counts = [
             {"name": event_type, "value": count}
             for event_type, count in (
@@ -971,7 +996,6 @@ class IntelligenceService:
                 .all()
             )
         ]
-        pending_audits = self.db.query(AuditTask).filter(AuditTask.status == "PENDING").count()
         search_health = self.search.health()
         settings = get_settings()
         redis_check = self._check_redis(settings)
@@ -988,8 +1012,9 @@ class IntelligenceService:
                 "events": self.db.query(DomainEventRecord).count(),
                 "pending_jobs": self.db.query(JobRunLog).filter(JobRunLog.status == "PENDING").count(),
                 "failed_jobs": self.db.query(JobRunLog).filter(JobRunLog.status == "FAILED").count(),
-                "pending_audits": pending_audits,
+                "pending_audits": int(risk["pending_audit_tasks"]),
                 "storage_backend": settings.storage_backend,
+                "governance_priority": risk["governance_priority"],
             },
             "runtime": {
                 "app_env": settings.app_env,
@@ -997,6 +1022,7 @@ class IntelligenceService:
                 "ai_provider": settings.ai_provider,
             },
             "search": search_health,
+            "governanceSnapshot": latest_snapshot,
             "readiness": readiness,
             "runbook": self._runbook(),
             "charts": {

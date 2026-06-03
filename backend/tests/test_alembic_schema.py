@@ -16,15 +16,16 @@ def test_alembic_upgrade_creates_advanced_database_objects(mysql_engine):
         "vw_active_product_catalog",
         "vw_seller_operational_summary",
         "vw_admin_risk_overview",
+        "vw_latest_governance_snapshot",
     }.issubset(view_names)
 
     with mysql_engine.connect() as connection:
         routines = {
-            row[0]
+            (row[0], row[1])
             for row in connection.execute(
                 text(
                     """
-                    SELECT routine_name
+                    SELECT routine_name, routine_type
                     FROM information_schema.routines
                     WHERE routine_schema = DATABASE()
                     """
@@ -82,12 +83,34 @@ def test_alembic_upgrade_creates_advanced_database_objects(mysql_engine):
                 )
             ).all()
         }
+        events = {
+            row[0]
+            for row in connection.execute(
+                text(
+                    """
+                    SELECT event_name
+                    FROM information_schema.events
+                    WHERE event_schema = DATABASE()
+                    """
+                )
+            ).all()
+        }
 
-    assert {"fn_product_display_status", "fn_seller_trust_level"}.issubset(routines)
+    assert {
+        ("fn_product_display_status", "FUNCTION"),
+        ("fn_seller_trust_level", "FUNCTION"),
+        ("fn_governance_priority", "FUNCTION"),
+        ("fn_seller_quality_band", "FUNCTION"),
+        ("sp_create_report_case", "PROCEDURE"),
+        ("sp_capture_admin_risk_snapshot", "PROCEDURE"),
+    }.issubset(routines)
     assert {
         "trg_reports_after_insert_audit_task",
         "trg_reports_after_insert_operation_log",
+        "trg_appeals_after_insert_audit_task",
+        "trg_appeals_after_insert_operation_log",
     }.issubset(triggers)
+    assert {"ev_capture_admin_risk_snapshot"}.issubset(events)
     assert {
         "ix_products_audit_status_product_status_updated_at",
         "ix_products_category_status_price",

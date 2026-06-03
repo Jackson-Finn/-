@@ -82,7 +82,8 @@ class IdentityRepository:
                     average_rating,
                     review_count,
                     report_count,
-                    trust_level
+                    trust_level,
+                    quality_band
                 FROM vw_seller_operational_summary
                 WHERE seller_id = :seller_id
                 """

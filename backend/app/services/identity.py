@@ -58,6 +58,7 @@ class IdentityService:
         average_rating = metrics["average_rating"] or persona["fallback_rating"]
         report_count = int(metrics.get("report_count", 0))
         trust_level = str(metrics.get("trust_level", "MEDIUM"))
+        quality_band = str(metrics.get("quality_band", "NEW"))
         return {
             "id": user.id,
             "display_name": user.display_name,
@@ -85,6 +86,7 @@ class IdentityService:
                     "detail": f"{trust_score} / 100，数据库按成交、评分与举报量评估为 {trust_level}。",
                 },
                 {"title": "历史交易", "detail": f"累计完成 {metrics['completed_orders']} 笔交易，当前公开在售 {metrics['active_products']} 件。"},
+                {"title": "服务分层", "detail": f"数据库按评价质量将卖家分层为 {quality_band}，用于辅助展示卖家稳定度。"},
                 {"title": "治理记录", "detail": f"关联举报 {report_count} 条，平台可追溯交易与申诉记录。"},
             ],
             "created_at": user.created_at,

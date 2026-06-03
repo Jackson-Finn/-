@@ -34,13 +34,19 @@ mysql+pymysql://marketplace:marketplace@127.0.0.1:3306/advanced_marketplace?char
 
 ```sql
 SET GLOBAL log_bin_trust_function_creators = 1;
+SET GLOBAL event_scheduler = ON;
 CREATE DATABASE IF NOT EXISTS advanced_marketplace CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'marketplace'@'127.0.0.1' IDENTIFIED BY 'marketplace';
 GRANT ALL PRIVILEGES ON advanced_marketplace.* TO 'marketplace'@'127.0.0.1';
 FLUSH PRIVILEGES;
 ```
 
-如果你希望这个设置在 MySQL 重启后也保留，可以改成 `SET PERSIST log_bin_trust_function_creators = 1;`。
+如果你希望这些设置在 MySQL 重启后也保留，可以改成：
+
+```sql
+SET PERSIST log_bin_trust_function_creators = 1;
+SET PERSIST event_scheduler = ON;
+```
 
 3. 迁移数据库并启动后端
 

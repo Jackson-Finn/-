@@ -297,6 +297,12 @@ def test_database_views_and_functions_are_queryable(mysql_client):
         trust_level = db.execute(
             text("SELECT fn_seller_trust_level(12, 4.8, 0)")
         ).scalar_one()
+        governance_priority = db.execute(
+            text("SELECT fn_governance_priority(3, 1, 4)")
+        ).scalar_one()
+        seller_quality_band = db.execute(
+            text("SELECT fn_seller_quality_band(4.9, 18)")
+        ).scalar_one()
         active_catalog_count = db.execute(
             text("SELECT COUNT(*) FROM vw_active_product_catalog")
         ).scalar_one()
@@ -311,6 +317,8 @@ def test_database_views_and_functions_are_queryable(mysql_client):
 
     assert display_status == "ACTIVE"
     assert trust_level == "HIGH"
+    assert governance_priority == "HIGH"
+    assert seller_quality_band == "PREMIUM"
     assert active_catalog_count >= 1
     assert seller_summary_count >= 1
     assert len(risk_rows) == 1
@@ -345,5 +353,110 @@ def test_report_insert_trigger_creates_governance_artifacts(mysql_client):
         db.rollback()
         db.close()
 
+    assert len(tasks) == 1
+    assert len(logs) == 1
+
+
+def test_appeal_insert_trigger_creates_governance_artifacts(mysql_client):
+    from app.core.database import SessionLocal
+    from app.models.entities import Appeal, AuditTask, OperationLog, Report, User
+
+    db = SessionLocal()
+    try:
+        seller = db.query(User).filter(User.email == "seller@example.com").one()
+        report = Report(
+            reporter_id=seller.id,
+            target_type="PRODUCT",
+            target_id=1,
+            reason="appeal trigger base report",
+            status="PROCESSED",
+            decision="ready for appeal",
+        )
+        db.add(report)
+        db.flush()
+
+        appeal = Appeal(
+            report_id=report.id,
+            applicant_id=seller.id,
+            reason="trigger managed appeal entry",
+        )
+        db.add(appeal)
+        db.flush()
+
+        tasks = (
+            db.query(AuditTask)
+            .filter(AuditTask.entity_type == "APPEAL", AuditTask.entity_id == appeal.id)
+            .all()
+        )
+        logs = [
+            item for item in db.query(OperationLog).order_by(OperationLog.id.asc()).all()
+            if item.action == "appeal.submit" and item.details.get("appeal_id") == appeal.id
+        ]
+    finally:
+        db.rollback()
+        db.close()
+
+    assert len(tasks) == 1
+    assert len(logs) == 1
+
+
+def test_stored_procedures_capture_snapshots_and_create_reports(mysql_client):
+    from app.core.database import SessionLocal
+    from app.models.entities import AuditTask, OperationLog, Report, User
+
+    db = SessionLocal()
+    try:
+        buyer = db.query(User).filter(User.email == "buyer@example.com").one()
+        db.execute(
+            text(
+                """
+                CALL sp_create_report_case(
+                    :reporter_id,
+                    :target_type,
+                    :target_id,
+                    :reason
+                )
+                """
+            ),
+            {
+                "reporter_id": buyer.id,
+                "target_type": "PRODUCT",
+                "target_id": 1,
+                "reason": "procedure created report",
+            },
+        )
+        report_id = db.query(Report.id).filter(Report.reason == "procedure created report").scalar()
+
+        db.execute(
+            text("CALL sp_capture_admin_risk_snapshot(:snapshot_label)"),
+            {"snapshot_label": "pytest-manual"},
+        )
+        snapshot = db.execute(
+            text(
+                """
+                SELECT snapshot_label, governance_priority
+                FROM governance_snapshots
+                ORDER BY id DESC
+                LIMIT 1
+                """
+            )
+        ).mappings().one()
+
+        tasks = (
+            db.query(AuditTask)
+            .filter(AuditTask.entity_type == "REPORT", AuditTask.entity_id == report_id)
+            .all()
+        )
+        logs = [
+            item for item in db.query(OperationLog).order_by(OperationLog.id.asc()).all()
+            if item.action == "report.submit" and item.details.get("report_id") == report_id
+        ]
+    finally:
+        db.rollback()
+        db.close()
+
+    assert report_id is not None
+    assert snapshot["snapshot_label"] == "pytest-manual"
+    assert snapshot["governance_priority"] in {"LOW", "MEDIUM", "HIGH"}
     assert len(tasks) == 1
     assert len(logs) == 1

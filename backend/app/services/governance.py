@@ -70,16 +70,6 @@ class GovernanceService:
             raise AppError("Appeal can only be submitted after report is processed", status_code=400)
         appeal = Appeal(report_id=payload.report_id, applicant_id=applicant_id, reason=payload.reason)
         self.repo.create_appeal(appeal)
-        self.repo.create_audit_task(
-            AuditTask(
-                task_type="APPEAL_REVIEW",
-                entity_type="APPEAL",
-                entity_id=appeal.id,
-                payload={"reason": payload.reason},
-                status=TaskStatus.PENDING.value,
-            )
-        )
-        self.repo.log_operation(applicant_id, "appeal.submit", {"appeal_id": appeal.id})
         self.publisher.publish(
             DomainEvent(
                 event_type="AppealSubmitted",

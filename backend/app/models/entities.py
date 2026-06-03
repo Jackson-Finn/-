@@ -280,6 +280,25 @@ class AuditTask(Base, TimestampMixin):
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
+class GovernanceSnapshot(Base, TimestampMixin):
+    __tablename__ = "governance_snapshots"
+    __table_args__ = (
+        Index("ix_governance_snapshots_captured_at", "captured_at"),
+        Index("ix_governance_snapshots_snapshot_label", "snapshot_label"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    snapshot_label: Mapped[str] = mapped_column(String(120))
+    pending_reports: Mapped[int] = mapped_column(Integer, default=0)
+    processed_reports: Mapped[int] = mapped_column(Integer, default=0)
+    pending_appeals: Mapped[int] = mapped_column(Integer, default=0)
+    approved_appeals: Mapped[int] = mapped_column(Integer, default=0)
+    rejected_appeals: Mapped[int] = mapped_column(Integer, default=0)
+    pending_audit_tasks: Mapped[int] = mapped_column(Integer, default=0)
+    governance_priority: Mapped[str] = mapped_column(String(16))
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class RecommendationMaterial(Base, TimestampMixin):
     __tablename__ = "recommendation_materials"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

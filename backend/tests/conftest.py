@@ -49,6 +49,7 @@ def mysql_engine(mysql_admin_url: str, mysql_database_url: str):
 
     with admin_engine.connect() as connection:
         connection.execute(text("SET GLOBAL log_bin_trust_function_creators = 1"))
+        connection.execute(text("SET GLOBAL event_scheduler = ON"))
         connection.execute(text(f"DROP DATABASE IF EXISTS `{database_name}`"))
         connection.execute(
             text(
