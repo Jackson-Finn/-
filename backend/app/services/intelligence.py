@@ -285,6 +285,7 @@ class IntelligenceService:
             "seller_name": seller.display_name if seller else None,
             "category_name": category.name if category else None,
             "cover_image": images[0].url if images else None,
+            "stock": product.stock,
             "condition_label": str(tags.get("condition_label") or tags.get("condition") or "成色良好"),
             "hero_summary": str(tags.get("hero_summary") or product.description[:72]),
             "updated_at": product.updated_at.isoformat() if product.updated_at else None,

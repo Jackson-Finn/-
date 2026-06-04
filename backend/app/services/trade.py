@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.enums import OrderStatus, ProductStatus, ReviewType
 from app.core.errors import AppError
 from app.core.events import DomainEvent, EventPublisher
+from app.core.realtime import manager
 from app.models.entities import Order, RecommendationMaterial, Review
 from app.repositories.catalog import CatalogRepository
 from app.repositories.trade import TradeRepository
@@ -52,6 +53,11 @@ class TradeService:
         )
         self.db.commit()
         self.db.refresh(order)
+        self.db.refresh(product)
+        manager.broadcast(
+            "StockUpdated",
+            {"product_id": product.id, "stock": product.stock},
+        )
         return order
 
     def list_orders(self, user_id: int):

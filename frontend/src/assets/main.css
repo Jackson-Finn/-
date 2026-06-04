@@ -300,3 +300,14 @@ a {
     max-width: none;
   }
 }
+
+/* ── Element Plus ElMessageBox 居中修复 ───────────────────────────── */
+/* 注意：el-dialog 不需要覆盖，Element Plus 原生居中机制会正常工作 */
+.el-overlay .el-message-box {
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin: 0 auto !important;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}

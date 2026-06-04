@@ -31,13 +31,22 @@
         </ProductCard>
       </div>
     </section>
+
+    <ConfirmDialog
+      v-model="confirmDialog.visible"
+      :title="confirmDialog.title"
+      :description="confirmDialog.description"
+      :loading="confirmDialog.loading"
+      @confirm="confirmDialog.onConfirm"
+    />
   </DataStateCard>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
+import ConfirmDialog from '../../components/common/ConfirmDialog.vue'
 import DataStateCard from '../../components/DataStateCard.vue'
 import ProductCard from '../../components/ProductCard.vue'
 import { tradeApi } from '../../api/trade'
@@ -46,6 +55,14 @@ const favorites = ref([])
 const loading = ref(false)
 const error = ref('')
 const visibleFavorites = computed(() => favorites.value.filter((item) => item?.product_summary?.id))
+
+const confirmDialog = ref({
+  visible: false,
+  title: '取消收藏',
+  description: '',
+  loading: false,
+  onConfirm: null
+})
 
 async function loadFavorites() {
   loading.value = true
@@ -60,19 +77,25 @@ async function loadFavorites() {
   }
 }
 
-async function removeFavorite(productId) {
-  await ElMessageBox.confirm('确定取消收藏这件商品吗？', '取消收藏', {
-    confirmButtonText: '取消收藏',
-    cancelButtonText: '保留收藏',
-    type: 'warning'
-  })
-
-  try {
-    await tradeApi.removeFavorite(productId)
-    ElMessage.success('已取消收藏')
-    await loadFavorites()
-  } catch (err) {
-    ElMessage.error(err.message)
+function removeFavorite(productId) {
+  confirmDialog.value = {
+    visible: true,
+    title: '取消收藏',
+    description: '确定取消收藏这件商品吗？',
+    loading: false,
+    onConfirm: async () => {
+      confirmDialog.value.loading = true
+      try {
+        await tradeApi.removeFavorite(productId)
+        confirmDialog.value.visible = false
+        ElMessage.success('已取消收藏')
+        await loadFavorites()
+      } catch (err) {
+        ElMessage.error(err.message)
+      } finally {
+        confirmDialog.value.loading = false
+      }
+    }
   }
 }
 

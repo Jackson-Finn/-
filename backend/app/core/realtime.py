@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from collections import defaultdict
 
 from fastapi import WebSocket
@@ -19,6 +21,21 @@ class ConnectionManager:
 
     def is_connected(self, user_id: int) -> bool:
         return bool(self.connections.get(user_id))
+
+    async def _broadcast(self, event: str, payload: dict) -> None:
+        for user_id, connections in list(self.connections.items()):
+            for connection in list(connections):
+                try:
+                    await connection.send_json({"event": event, "payload": payload})
+                except Exception:
+                    pass
+
+    def broadcast(self, event: str, payload: dict) -> None:
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self._broadcast(event, payload))
+        except RuntimeError:
+            asyncio.run(self._broadcast(event, payload))
 
     async def push(self, user_id: int, event: str, payload: dict) -> None:
         for connection in list(self.connections.get(user_id, [])):

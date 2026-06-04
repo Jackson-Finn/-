@@ -20,7 +20,7 @@
       </div>
       <div class="fact-item">
         <span>库存</span>
-        <strong>{{ product.stock || 1 }} 件</strong>
+        <strong>{{ (product.stock ?? 0) }} 件</strong>
       </div>
     </div>
   </section>

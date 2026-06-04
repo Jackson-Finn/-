@@ -120,8 +120,8 @@ class TradeRepository:
         return (
             self.db.query(Product)
             .filter(
-                Product.audit_status == AuditStatus.APPROVED.value,
-                Product.product_status == ProductStatus.ACTIVE.value,
+                Product.audit_status == "APPROVED",
+                Product.product_status == "ACTIVE",
             )
             .order_by(Product.created_at.desc())
             .limit(limit)

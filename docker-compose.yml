@@ -10,7 +10,7 @@ x-backend-common: &backend-common
     - backend-venv:/opt/venv
     - pip-cache:/root/.cache/pip
   env_file:
-    - ./backend/.env.example
+    - ./backend/.env
   environment:
     PYTHONUNBUFFERED: "1"
     PYTHONDONTWRITEBYTECODE: "1"
