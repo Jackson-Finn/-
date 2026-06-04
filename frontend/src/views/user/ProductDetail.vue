@@ -17,14 +17,27 @@
         </header>
 
         <section class="hero-grid">
-          <div class="hero-media">
-            <ProductGallery
-              :images="galleryImages"
-              :title="product.title"
-              :category="product.category_name"
-              :current-index="currentImageIndex"
-              @update:current-index="currentImageIndex = $event"
-            />
+          <div class="hero-main">
+            <div class="hero-media">
+              <ProductGallery
+                :images="galleryImages"
+                :title="product.title"
+                :category="product.category_name"
+                :current-index="currentImageIndex"
+                @update:current-index="currentImageIndex = $event"
+              />
+            </div>
+
+            <div class="hero-detail-panel panel">
+              <ProductDescription
+                :description="product.description || '卖家暂未补充更多描述。'"
+                :sections="descriptionSections"
+              />
+            </div>
+
+            <div class="hero-detail-panel panel">
+              <ProductFacts :items="factItems" />
+            </div>
           </div>
 
           <aside class="hero-side">
@@ -67,17 +80,6 @@
         </section>
 
         <section class="content-stack">
-          <div class="content-panel panel">
-            <ProductDescription
-              :description="product.description || '卖家暂未补充更多描述。'"
-              :sections="descriptionSections"
-            />
-          </div>
-
-          <div class="content-panel panel">
-            <ProductFacts :items="factItems" />
-          </div>
-
           <div class="content-panel panel ai-insight-panel">
             <div class="section-header">
               <div>
@@ -268,8 +270,9 @@ const isFavorite = computed(() => favoriteIds.value.includes(productId.value))
 const canOrder = computed(() => {
   const approved = product.value.audit_status === 'APPROVED'
   const active = product.value.product_status === 'ACTIVE'
+  const hasStock = (product.value.stock ?? 0) > 0
   const notMine = !userStore.profile || userStore.profile.id !== product.value.seller_id
-  return approved && active && notMine
+  return approved && active && hasStock && notMine
 })
 
 const factItems = computed(() => [
@@ -703,8 +706,8 @@ watch(
 
 .detail-shell {
   display: grid;
-  gap: 20px;
-  max-width: 1360px;
+  gap: 24px;
+  max-width: 1440px;
   margin: 0 auto;
 }
 
@@ -716,9 +719,9 @@ watch(
 .back-button {
   min-height: 42px;
   padding: 0 16px;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 999px;
-  background: var(--surface);
+  background: rgba(73, 57, 41, 0.06);
   color: var(--text);
   font-weight: 800;
   cursor: pointer;
@@ -727,15 +730,20 @@ watch(
 .hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(360px, 0.82fr);
-  gap: 20px;
+  gap: 22px;
   align-items: start;
 }
 
+.hero-main,
 .hero-side,
 .content-stack,
 .recommendation-stack {
   display: grid;
   gap: 18px;
+}
+
+.hero-detail-panel {
+  padding: 24px;
 }
 
 .hero-side {
@@ -745,7 +753,7 @@ watch(
 
 .hero-copy-panel,
 .content-panel {
-  padding: 20px;
+  padding: 24px;
 }
 
 .seller-section {
@@ -768,9 +776,8 @@ watch(
   gap: 12px;
   align-items: start;
   padding: 16px 18px;
-  border-radius: 12px;
-  background: var(--surface-soft);
-  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(36, 88, 222, 0.08), rgba(255, 255, 255, 0.92));
 }
 
 .ai-summary-card strong {
@@ -790,9 +797,8 @@ watch(
 .ai-card,
 .ai-list-block {
   padding: 16px 18px;
-  border-radius: 12px;
-  background: var(--surface-soft);
-  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(73, 57, 41, 0.04);
 }
 
 .ai-card {

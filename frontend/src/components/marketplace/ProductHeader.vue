@@ -20,7 +20,7 @@
       </div>
       <div class="fact-item">
         <span>库存</span>
-        <strong>{{ product.stock || 1 }} 件</strong>
+        <strong>{{ (product.stock ?? 0) }} 件</strong>
       </div>
     </div>
   </section>
@@ -40,7 +40,7 @@ defineProps({
 <style scoped>
 .header-block {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .topline {
@@ -55,12 +55,11 @@ defineProps({
 .product-code {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 0 10px;
+  min-height: 34px;
+  padding: 0 12px;
   border-radius: 999px;
-  font-size: 0.74rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  border: 1px solid var(--line);
 }
 
 .category-pill {
@@ -69,12 +68,12 @@ defineProps({
 }
 
 .status-pill {
-  background: var(--surface);
+  background: rgba(255, 252, 247, 0.94);
 }
 
 .product-code {
   color: var(--muted);
-  background: var(--surface-soft);
+  background: rgba(255, 252, 247, 0.56);
 }
 
 .tone-positive {
@@ -95,10 +94,10 @@ defineProps({
 
 .product-title {
   margin: 0;
-  font-size: clamp(1.7rem, 2.4vw, 2.5rem);
+  font-size: clamp(2rem, 2.8vw, 3rem);
   font-weight: 700;
-  line-height: 1.12;
-  letter-spacing: -0.04em;
+  line-height: 1.08;
+  letter-spacing: -0.05em;
   text-wrap: balance;
 }
 
@@ -106,8 +105,8 @@ defineProps({
   margin: 0;
   max-width: 46ch;
   color: var(--muted-strong);
-  font-size: 0.95rem;
-  line-height: 1.75;
+  font-size: 1rem;
+  line-height: 1.82;
 }
 
 .fact-row {
@@ -118,10 +117,10 @@ defineProps({
 
 .fact-item {
   min-width: 132px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--surface-soft);
-  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 252, 247, 0.66);
+  box-shadow: inset 0 0 0 1px rgba(73, 57, 41, 0.06);
   display: grid;
   gap: 5px;
 }
